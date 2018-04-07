@@ -3,8 +3,9 @@
  http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 '''
 
-from numpy   import *
-from cantera import *
+import numpy as np
+# from cantera import *
+
 
 def eq_state(gas, r1, T1):
     """
@@ -30,7 +31,8 @@ def eq_state(gas, r1, T1):
     H = gas.enthalpy_mass
     return [P, H]
 
-def state(gas,r1,T1):
+
+def state(gas, r1, T1):
     """
 
     state
@@ -49,11 +51,12 @@ def state(gas,r1,T1):
 
     """
     gas.TD = T1, r1
-    P = gas.P;
+    P = gas.P
     H = gas.enthalpy_mass
     return [P, H]
 
-def LSQ_CJspeed(x,y):
+
+def LSQ_CJspeed(x, y):
     """
 
     LSQ_CJspeed
@@ -66,6 +69,7 @@ def LSQ_CJspeed(x,y):
     INPUT
     x = independent data points
     y = dependent data points
+    x & y ARE NUMPY ARRAYS, TYPE CHECK THIS!!
 
     OUTPUT
     a,b,c = coefficients of quadratic function (ax^2 + bx + c = 0)
@@ -74,12 +78,20 @@ def LSQ_CJspeed(x,y):
     SST = total sum of squares
 
     """
-    #Calculate Sums
+    # Calculate Sums
     k = 0
-    X = 0.0; X2 = 0.0; X3 = 0.0; X4 = 0.0;
-    Y = 0.0; Y1 = 0.0; Y2 = 0.0;
-    a = 0.0; b = 0.0; c = 0.0; R2 = 0.0
-    n = size(x)
+    X = 0.0
+    X2 = 0.0
+    X3 = 0.0
+    X4 = 0.0
+    Y = 0.0
+    Y1 = 0.0
+    Y2 = 0.0
+    a = 0.0
+    b = 0.0
+    c = 0.0
+    R2 = 0.0
+    n = np.size(x)
 
     while k < n:
         X = X + x[k]
@@ -89,35 +101,42 @@ def LSQ_CJspeed(x,y):
         Y = Y + y[k]
         Y1 = Y1 + y[k]*x[k]
         Y2 = Y2 + y[k]*x[k]**2
-        k= k + 1
-    m = float(Y)/float(n)
+        k += 1
+    m = float(Y) / float(n)
 
-    den = (X3*float(n) - X2*X)
-    temp = (den*(X*X2-X3*float(n))+X2*X2*(X*X-float(n)*X2)-X4*float(n)*(X*X-X2*float(n)))
-    temp2 = (den*(Y*X2-Y2*float(n)) + (Y1*float(n)-Y*X)*(X4*float(n)-X2*X2))
+    den = (X3 * float(n) - X2 * X)
+    temp = (den * (X * X2 - X3 * float(n)) +
+            X2 * X2 * (X * X - float(n) * X2) -
+            X4 * float(n) * (X * X - X2 * float(n)))
+    temp2 = (den * (Y * X2 - Y2 * float(n)) +
+             (Y1 * float(n) - Y * X) * (X4 * float(n) - X2 * X2))
 
-    b = temp2/temp
-    a = 1.0/den*(float(n)*Y1 - Y*X - b*(X2*float(n)-X*X))
-    c = 1/float(n)*(Y - a*X2 - b*X)
+    b = temp2 / temp
+    a = 1.0 / den * (float(n) * Y1 - Y * X - b * (X2 * float(n) - X * X))
+    c = 1 / float(n) * (Y - a * X2 - b * X)
 
-    k= 0; SSE = 0.0; SST = 0.0;
+    k = 0
+    SSE = 0.0
+    SST = 0.0
 
-    f = zeros(size(x),float)
-    
-    while k < size(x):
-        f[k] = a*x[k]**2 + b*x[k] + c
+    f = np.zeros(np.size(x), float)
+
+    while k < np.size(x):
+        f[k] = a * x[k]**2 + b * x[k] + c
         SSE = SSE + (y[k] - f[k])**2
         SST = SST + (y[k] - m)**2
-        k = k + 1
-    R2 = 1 - SSE/SST
+        k += 1
+    R2 = 1 - SSE / SST
 
-    return [a,b,c,R2,SSE,SST]
+    return [a, b, c, R2, SSE, SST]
 
-def hug_fr(x,vb,h1,P1,v1,gas):
+
+def hug_fr(x, vb, h1, P1, v1, gas):
     """
 
     hug_fr
-    Algebraic expressions of frozen (reactant) Hugoniot pressure and enthalpy. Passed to root solver 'fsolve'.
+    Algebraic expressions of frozen (reactant) Hugoniot pressure and enthalpy.
+    Passed to root solver 'fsolve'.
 
     FUNCTION
     SYNTAX
@@ -137,16 +156,19 @@ def hug_fr(x,vb,h1,P1,v1,gas):
     """
     gas.TD = x, 1.0/vb
     hb1 = gas.enthalpy_mass
-    Pb = gas_constant*x/(gas.mean_molecular_weight*vb)
-    
-    hb2 = h1 + 0.5*(Pb-P1)*(vb+v1)
-    return hb2-hb1
-    
-def hug_eq(x,vb,h1,P1,v1,gas):
-    """ 
+    gas_constant = 8314  # NOTE: I THINK THIS COMES FROM CANTERA, CHECK THIS
+    Pb = gas_constant * x / (gas.mean_molecular_weight * vb)
+
+    hb2 = h1 + 0.5 * (Pb - P1) * (vb + v1)
+    return hb2 - hb1
+
+
+def hug_eq(x, vb, h1, P1, v1, gas):
+    """
 
     hug_eq
-    Algebraic expressions of equilibrium (product) Hugoniot pressure and enthalpy. Passed to root solver 'fsolve'.
+    Algebraic expressions of equilibrium (product) Hugoniot pressure and
+    enthalpy. Passed to root solver 'fsolve'.
 
     FUNCTION
     SYNTAX
@@ -167,7 +189,7 @@ def hug_eq(x,vb,h1,P1,v1,gas):
     gas.TD = x, 1.0/vb
     gas.equilibrate('TV')
     hb1 = gas.enthalpy_mass
-    Pb = gas_constant*x/(gas.mean_molecular_weight*vb)
-    hb2 = h1 + 0.5*(Pb-P1)*(vb+v1)
-    return hb2-hb1
-    
+    gas_constant = 8314  # SEE ABOVE NOTE ABOUT GAS CONSTANT
+    Pb = gas_constant * x / (gas.mean_molecular_weight * vb)
+    hb2 = h1 + 0.5 * (Pb - P1) * (vb + v1)
+    return hb2 - hb1
