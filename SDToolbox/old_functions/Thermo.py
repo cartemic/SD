@@ -6,6 +6,7 @@
 from numpy   import *
 from cantera import *
 
+''' moved to get_state.equilibrium()
 def eq_state(gas, r1, T1):
     """
 
@@ -29,7 +30,8 @@ def eq_state(gas, r1, T1):
     P = gas.P
     H = gas.enthalpy_mass
     return [P, H]
-
+'''
+''' moved to get_state.frozen()
 def state(gas,r1,T1):
     """
 
@@ -52,6 +54,8 @@ def state(gas,r1,T1):
     P = gas.P;
     H = gas.enthalpy_mass
     return [P, H]
+'''
+
 
 def LSQ_CJspeed(x,y):
     """

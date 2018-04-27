@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr 27 11:26:35 2018
+Assorted support tools for use in solving shock and detonation related
+problems.
 
-@author: cartemic
+Original functions from Shock and Detonation Toolbox
+http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 """
 
 

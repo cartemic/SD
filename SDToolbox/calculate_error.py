@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr 27 14:19:40 2018
+Functions for calculating error in enthalpy and pressure for frozen and
+equilibrium gas states.
 
-@author: cartemic
+Original functions from Shock and Detonation Toolbox
+http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 """
 
 import numpy as np
@@ -28,7 +30,7 @@ def equilibrium(working_gas, initial_state_gas, initial_velocity_guess):
 
     Returns
     -------
-    error_array : numpy array
+    numpy array
         A numpy array of errors in [enthalpy, pressure]
     """
 
@@ -90,7 +92,7 @@ def frozen(working_gas, initial_state_gas, initial_velocity_guess):
 
     Returns
     -------
-    error_array : numpy array
+    numpy array
         A numpy array of errors in [enthalpy, pressure]
     """
 

@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-muh docstring
+Functions for calculating Chapman-Jouguet wave speeds using various solution
+methods.
+
+Original functions from Shock and Detonation Toolbox
+http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 """
 
 import warnings
 import numpy as np
-from . import tools, calculate_error
+from . import tools, calculate_error, get_state
 
 
 def using_reynolds_iterative_method(working_gas,
@@ -70,14 +74,10 @@ def using_reynolds_iterative_method(working_gas,
              }
 
     # Add pressure and enthalpy to guess dictionary
-    guess.update(eq_state(working_gas,
-                          guess['density'],
-                          guess['temperature']))
+    guess.update(get_state.equilibrium(working_gas,
+                                       guess['density'],
+                                       guess['temperature']))
 
-    # NOTE: make eq_state output a dictionary with values for 'pressure' and
-    # 'enthalpy'
-
-    # START LOOP
     loop_counter = 0
     while ((abs(delta['temperature']) >
            error_tol_temperature * guess['temperature'])
@@ -107,9 +107,9 @@ def using_reynolds_iterative_method(working_gas,
         # Perturb temperature guess and find corresponding pressure and
         # enthalpy values
         perturbed = tools.perturb('temperature', guess, delta)
-        perturbed.update(eq_state(working_gas,
-                                  perturbed['density'],
-                                  perturbed['temperature']))
+        perturbed.update(get_state.equilibrium(working_gas,
+                                               perturbed['density'],
+                                               perturbed['temperature']))
 
         # Calculate pressure and enthalpy error for temperature-perturbed
         # state, add (negative) ordinate vector to get error deltas for
@@ -154,15 +154,23 @@ def using_reynolds_iterative_method(working_gas,
          delta['initial_velocity']] = np.linalg.solve(coefficient_matrix,
                                                       ordinate_vector)
 
-        # CHECK & LIMIT CHANGE VALUES
-        # VOLUME
-        DTM = guess['temperature'] * 0.2
-        if abs(delta['temperature']) > DTM:
-            delta['temperature'] *= DTM / abs(delta['temperature'])
+        # Limit temperature delta to 20% of current guess
+        max_temperature_delta = guess['temperature'] * 0.2
+        if abs(delta['temperature']) > max_temperature_delta:
+            delta['temperature'] *= (
+                                     max_temperature_delta /
+                                     abs(delta['temperature'])
+                                     )
 
         # Update guess values
         guess['temperature'] += delta['temperature']
         guess['initial_velocity'] += delta['initial_velocity']
-        [P, H] = eq_state(working_gas, guess['density'], guess['temperature'])
+        guess.update(
+                     get_state.equilibrium(
+                                           working_gas,
+                                           guess['density'],
+                                           guess['temperature']
+                                           )
+                     )
 
     return [working_gas, guess['initial_velocity']]
