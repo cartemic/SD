@@ -2,21 +2,25 @@
  Shock and Detonation Toolbox
  http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 '''
-
+'''
 from numpy     import *
 from cantera   import *
 from SDToolbox import *
+'''
 
+''' moved to calculate_error.py
 def FHFP_CJ(gas,gas1,w1):
     """
 
     FHFP_CJ
-    Uses the momentum and energy conservation equations to calculate error in current pressure and enthalpy guesses.  In this case, state 2 is in equilibrium.
+    Uses the momentum and energy conservation equations to calculate error in
+    current pressure and enthalpy guesses.  In this case, state 2 is in
+    equilibrium.
 
     FUNCTION
     SYNTAX
     [FH,FP] = FHFP_CJ(gas,gas1,w1)
-    
+
     INPUT
     gas = working gas object
     gas1 = gas object at initial state
@@ -33,24 +37,26 @@ def FHFP_CJ(gas,gas1,w1):
     P2 = gas.P
     H2 = gas.enthalpy_mass
     r2 = gas.density
-    
+
     w2 = w1*(r1/r2)
     w1s = w1**2
     w2s = w2**2
     FH = H2 + 0.5*w2s - (H1 + 0.5*w1s)
     FP = P2 + r2*w2s - (P1 + r1*w1s)
     return [FH, FP]
-
+'''
+'''
 def FHFP_fr(U1,gas,gas1):
     """
 
     FHFP_fr
-    Uses the momentum and energy conservation equations to calculate error in current pressure and enthalpy guesses.  In this case, state 2 is frozen.
+    Uses the momentum and energy conservation equations to calculate error in
+    current pressure and enthalpy guesses.  In this case, state 2 is frozen.
 
     FUNCTION
     SYNTAX
     [FH,FP] = FHFP_fr(U1,gas,gas1)
-    
+
     INPUT
     U1 = shock speed (m/s)
     gas = working gas object
@@ -68,13 +74,15 @@ def FHFP_fr(U1,gas,gas1):
     P2 = gas.P
     H2 = gas.enthalpy_mass
     r2 = gas.density
-    
+
     w1s = U1**2;
     w2s = w1s*(r1/r2)**2;
     FH = H2 + 0.5*w2s - (H1 + 0.5*w1s);
     FP = P2 + r2*w2s - (P1 + r1*w1s);
     return [FH, FP]
+'''
 
+''' moved to calculate_cj_speed.py
 def CJ_calc(gas, gas1, ERRFT, ERRFV, x):
     """
 
@@ -105,46 +113,47 @@ def CJ_calc(gas, gas1, ERRFT, ERRFV, x):
     #START LOOP
     while (abs(DT) > ERRFT*T or abs(DW) > ERRFV*w1):
         i = i + 1
-	if i == 500:
+        if i == 500:
             'i = 500'
             return
-    	#CALCULATE FH & FP FOR GUESS 1
-	[FH,FP] = FHFP_CJ(gas,gas1,w1)
+        #CALCULATE FH & FP FOR GUESS 1
+        [FH,FP] = FHFP_CJ(gas,gas1,w1)
 
-	#TEMPERATURE PERTURBATION
-	DT = T*0.02; Tper = T + DT;
-	Vper = V; Rper = 1/Vper;
-	Wper = w1;
-	[Pper, Hper] = eq_state(gas,Rper,Tper)
-	#CALCULATE FHX & FPX FOR "IO" STATE
-	[FHX,FPX] = FHFP_CJ(gas,gas1,Wper)
-	#ELEMENTS OF JACOBIAN
-	DFHDT = (FHX-FH)/DT; DFPDT = (FPX-FP)/DT;
+        #TEMPERATURE PERTURBATION
+        DT = T*0.02; Tper = T + DT;
+        Vper = V; Rper = 1/Vper;
+        r = w1;
+        [Pper, Hper] = eq_state(gas,Rper,Tper)
+        #CALCULATE FHX & FPX FOR "IO" STATE
+        [FHX,FPX] = FHFP_CJ(gas,gas1,Wper)  # NOTE: THIS SHOULD BE Tper
+        #ELEMENTS OF JACOBIAN
+        DFHDT = (FHX-FH)/DT; DFPDT = (FPX-FP)/DT;
 
-	#VELOCITY PERTURBATION
-	DW = 0.02*w1; Wper = w1 + DW;
-	Tper = T; Rper = 1/V;
-	[Pper, Hper] = eq_state(gas,Rper,Tper)
-	#CALCULATE FHX & FPX FOR "IO" STATE
-	[FHX,FPX] = FHFP_CJ(gas,gas1,Wper)
-	#ELEMENTS OF JACOBIAN
-	DFHDW = (FHX-FH)/DW; DFPDW = (FPX-FP)/DW;
+        #VELOCITY PERTURBATION
+        DW = 0.02*w1; Wper = w1 + DW;
+        Tper = T; Rper = 1/V;
+        [Pper, Hper] = eq_state(gas,Rper,Tper)
+        #CALCULATE FHX & FPX FOR "IO" STATE
+        X,FPX] = FHFP_CJ(gas,gas1,Wper)
+        #ELEMENTS OF JACOBIAN
+        DFHDW = (FHX-FH)/DW; DFPDW = (FPX-FP)/DW;
 
-	#INVERT MATRIX
-	J = DFHDT*DFPDW - DFPDT*DFHDW
-	b = [DFPDW, -DFHDW, -DFPDT, DFHDT]
-	a = [-FH, -FP]
-	DT = (b[0]*a[0]+b[1]*a[1])/J; DW = (b[2]*a[0]+b[3]*a[1])/J;
-	
-	#CHECK & LIMIT CHANGE VALUES
-	#VOLUME
-	DTM = 0.2*T
-	if abs(DT) > DTM:
+        #INVERT MATRIX
+        J = DFHDT*DFPDW - DFPDT*DFHDW
+        b = [DFPDW, -DFHDW, -DFPDT, DFHDT]
+        a = [-FH, -FP]
+        DT = (b[0]*a[0]+b[1]*a[1])/J; DW = (b[2]*a[0]+b[3]*a[1])/J;
+
+        #CHECK & LIMIT CHANGE VALUES
+        #VOLUME
+        DTM = 0.2*T
+        if abs(DT) > DTM:
             DT = DTM*DT/abs(DT)
         #MAKE THE CHANGES
-	T = T + DT; w1 = w1 + DW;
-	[P, H] = eq_state(gas,r,T)
+        T = T + DT; w1 = w1 + DW;
+        [P, H] = eq_state(gas,r,T)
     return [gas, w1]
+'''
 
 def CJspeed(P1, T1, q, mech, plt_num):
     """
