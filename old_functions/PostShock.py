@@ -125,7 +125,7 @@ def CJ_calc(gas, gas1, ERRFT, ERRFV, x):
         r = w1;
         [Pper, Hper] = eq_state(gas,Rper,Tper)
         #CALCULATE FHX & FPX FOR "IO" STATE
-        [FHX,FPX] = FHFP_CJ(gas,gas1,Wper)  # NOTE: THIS SHOULD BE Tper
+        [FHX,FPX] = FHFP_CJ(gas,gas1,Wper)
         #ELEMENTS OF JACOBIAN
         DFHDT = (FHX-FH)/DT; DFPDT = (FPX-FP)/DT;
 
@@ -154,7 +154,7 @@ def CJ_calc(gas, gas1, ERRFT, ERRFV, x):
         [P, H] = eq_state(gas,r,T)
     return [gas, w1]
 '''
-
+'''
 def CJspeed(P1, T1, q, mech, plt_num):
     """
 
@@ -178,7 +178,7 @@ def CJspeed(P1, T1, q, mech, plt_num):
 
     """
     #DECLARATIONS
-    numsteps = 20; maxv = 2.0; minv = 1.5; 
+    numsteps = 20; maxv = 2.0; minv = 1.5;
 
 
     w1 = zeros(numsteps+1,float)
@@ -189,20 +189,20 @@ def CJspeed(P1, T1, q, mech, plt_num):
     #INTIAL CONDITIONS
     gas.TPX  = T1, P1, q
     gas1.TPX = T1, P1, q
-    
+
     #INITIALIZE ERROR VALUES & CHANGE VALUES
     ERRFT = 1.0*10**-4;  ERRFV = 1.0*10**-4;
 
     i = 1;
     T1 = gas1.T; P1 = gas1.P;
-    
+
     counter = 1; R2 = 0.0; cj_speed = 0.0
     a = 0.0; b = 0.0; c = 0.0; dnew = 0.0
     while (counter <= 4) or (R2 < 0.99999):
-	step = (maxv-minv)/float(numsteps)
-	i = 0
-	x = minv
-	while x <= maxv:
+        step = (maxv-minv)/float(numsteps)
+        i = 0
+        x = minv
+        while x <= maxv:
             gas.TPX = T1, P1, q
             [gas, temp] = CJ_calc(gas, gas1, ERRFT, ERRFV, x)
             w1[i] = temp
@@ -217,27 +217,29 @@ def CJspeed(P1, T1, q, mech, plt_num):
 
     cj_speed = a*dnew**2 + b*dnew + c
     return [cj_speed,R2]
+'''
+
 
 def PostShock_fr(U1, P1, T1, q, mech):
     """
-     
+
     PostShock_fr
     Calculates frozen post-shock state for a specified shock velocity
 
     FUNCTION
     SYNTAX
     [gas] = PostShock_fr(U1,P1,T1,q,mech)
-    
+
     INPUT
     U1 = shock speed (m/s)
     P1 = initial pressure (Pa)
     T1 = initial temperature (K)
     q = string of reactant species mole fractions
     mech = cti file containing mechanism data (i.e. 'gri30.cti')
-    
+
     OUTPUT
     gas = gas object at frozen post-shock state
-    
+
     """
     gas1 = Solution(mech)
     gas  = Solution(mech)
@@ -291,7 +293,7 @@ def shk_calc(U1, gas, gas1, ERRFT, ERRFV):
     FUNCTION
     SYNTAX
     [gas] = shk_calc(U1,gas,gas1,ERRFT,ERRFV)
-    
+
     INPUT
     U1 = shock speed (m/s)
     gas = working gas object
@@ -345,7 +347,7 @@ def shk_calc(U1, gas, gas1, ERRFT, ERRFV):
         b = [DFPDV, -DFHDV, -DFPDT, DFHDT]
         a = [-FH, -FP]
         deltaT = (b[0]*a[0]+b[1]*a[1])/J; deltaV = (b[2]*a[0]+b[3]*a[1])/J;
-    
+
         #CHECK & LIMIT CHANGE VALUES
         #TEMPERATURE
         DTM = 0.2*T
@@ -376,7 +378,7 @@ def shk_eq_calc(U1, gas, gas1, ERRFT, ERRFV):
     FUNCTION
     SYNTAX
     [gas] = shk_calc(U1,gas,gas1,ERRFT,ERRFV)
-    
+
     INPUT
     U1 = shock speed (m/s)
     gas = working gas object
@@ -427,7 +429,7 @@ def shk_eq_calc(U1, gas, gas1, ERRFT, ERRFV):
         b = [DFPDV, -DFHDV, -DFPDT, DFHDT]
         a = [-FH, -FP]
         deltaT = (b[0]*a[0]+b[1]*a[1])/J; deltaV = (b[2]*a[0]+b[3]*a[1])/J;
-    
+
         #CHECK & LIMIT CHANGE VALUES
         #TEMPERATURE
         DTM = 0.2*T

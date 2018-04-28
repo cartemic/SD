@@ -9,18 +9,20 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 
 import warnings
 import numpy as np
+import cantera as ct
+from scipy.optimize import curve_fit
 from . import tools, calculate_error, get_state
 
 
-def using_reynolds_iterative_method(working_gas,
-                                    initial_state_gas,
-                                    error_tol_temperature,
-                                    error_tol_specific_volume,
-                                    density_ratio,
-                                    max_iterations=500):
+def state_and_speed(working_gas,
+                    initial_state_gas,
+                    error_tol_temperature,
+                    error_tol_specific_volume,
+                    density_ratio,
+                    max_iterations=500):
     """
-    This function calculates the Chapman-Jouguet wave speed using Reynolds'
-    iterative method.
+    This function calculates the Chapman-Jouguet state and wave speed using
+    Reynolds' iterative method.
 
     Original function: CJ_calc in PostShock.py
 
@@ -62,7 +64,7 @@ def using_reynolds_iterative_method(working_gas,
         'temperature': 1000.,
         'volume': 1000.,
         'pressure': 1000.,
-        'velocity': 1000.
+        'initial_velocity': 1000.
         }
 
     # Set guess values
@@ -82,7 +84,7 @@ def using_reynolds_iterative_method(working_gas,
     while ((abs(delta['temperature']) >
             error_tol_temperature * guess['temperature'])
            or
-           (abs(delta['velocity']) >
+           (abs(delta['initial_velocity']) >
             error_tol_specific_volume * guess['initial_velocity'])):
 
         # Manage loop count
@@ -90,7 +92,7 @@ def using_reynolds_iterative_method(working_gas,
         if loop_counter == max_iterations:
             warnings.warn('No convergence within {0} iterations'.
                           format(max_iterations))
-            return [None, None]
+            return [working_gas, guess['initial_velocity']]
 
         # Calculate pressure and enthalpy error for current guess values as
         # a numpy array, which will be the negative of the ordinate vector, b,
@@ -121,14 +123,14 @@ def using_reynolds_iterative_method(working_gas,
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                perturbed['temperature']
+                perturbed['initial_velocity']
                 ) +
             ordinate_vector
             )
         temperature_partials /= delta['temperature']
 
         # Perturb velocity guess -- temperature and enthalpy are not affected
-        delta['velocity'] = guess['initial_velocity'] * 0.02
+        delta['initial_velocity'] = guess['initial_velocity'] * 0.02
         perturbed = tools.perturb('initial_velocity', guess, delta)
 
         # Calculate pressure and enthalpy error for velocity-perturbed
@@ -147,8 +149,8 @@ def using_reynolds_iterative_method(working_gas,
         velocity_partials /= delta['initial_velocity']
 
         # build coefficient matrix, A, for Ax = b
-        coefficient_matrix = np.array(temperature_partials,
-                                      velocity_partials).transpose()
+        coefficient_matrix = np.array([temperature_partials,
+                                       velocity_partials]).transpose()
 
         # Solve Ax = b
         [delta['temperature'],
@@ -176,3 +178,99 @@ def using_reynolds_iterative_method(working_gas,
             )
 
     return [working_gas, guess['initial_velocity']]
+
+
+def speed(initial_pressure,
+          initial_temperature,
+          species_mole_fractions,
+          mechanism):
+    """
+
+    CJspeed
+    Calculates CJ detonation velocity
+
+    FUNCTION
+    SYNTAX
+    [cj_speed,R2] = CJspeed(P1,T1,q,mech,plt_num)
+
+    INPUT
+    P1 = initial pressure (Pa)
+    T1 = initial temperature (K)
+    q = string of reactant species mole fractions
+    mech = cti file containing mechanism data (i.e. 'gri30.cti')
+
+    OUTPUT
+    cj_speed = CJ detonation speed (m/s)
+    R2 = R-squared value of LSQ curve fit
+
+    """
+    # DECLARATIONS
+    numsteps = 20
+    maxv = 2.0
+    minv = 1.5
+
+    w1 = np.zeros(numsteps+1, float)
+    rr = np.zeros(numsteps+1, float)
+
+    # Initialize gas objects
+    initial_state_gas = ct.Solution(mechanism)
+    working_gas = ct.Solution(mechanism)
+    initial_state_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions
+        ]
+    working_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions
+        ]
+
+    # INITIALIZE ERROR VALUES & CHANGE VALUES
+    ERRFT = 1e-4
+    ERRFV = 1e-4
+
+    counter = 1
+    r_squared = 0.0
+    cj_speed = 0.0
+    dnew = 0.0
+
+    def curve_fit_function(x, a, b, c):
+        return a * x**2 + b * x + c
+
+    while (counter <= 4) or (r_squared < 0.99999):
+        step = (maxv-minv)/float(numsteps)
+        i = 0
+        x = minv
+        while x <= maxv:
+            working_gas.TPX = [
+                initial_temperature,
+                initial_pressure,
+                species_mole_fractions
+                ]
+            [working_gas,
+             temp] = state_and_speed(
+                 working_gas, initial_state_gas,
+                 ERRFT,
+                 ERRFV,
+                 x
+                 )
+            w1[i] = temp
+            rr[i] = working_gas.density / initial_state_gas.density
+            i += 1
+            x += step
+        # [a, b, c, R2, SSE, SST] = LSQ_CJspeed(rr, w1)
+        # Get curve fit and R^2
+        [popt, _] = curve_fit(curve_fit_function, rr, w1)
+        residuals = w1 - curve_fit_function(rr, *popt)
+        ss_residual = np.sum(residuals**2)
+        ss_total = np.sum((w1 - np.mean(w1))**2)
+        r_squared = 1 - (ss_residual / ss_total)
+
+        dnew = -popt[1] / (2. * popt[0])
+        minv = dnew - dnew*0.001
+        maxv = dnew + dnew*0.001
+        counter += 1
+
+    cj_speed = curve_fit_function(dnew, *popt)
+    return [cj_speed, r_squared]

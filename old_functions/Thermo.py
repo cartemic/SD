@@ -56,7 +56,7 @@ def state(gas,r1,T1):
     return [P, H]
 '''
 
-
+'''
 def LSQ_CJspeed(x,y):
     """
 
@@ -97,7 +97,8 @@ def LSQ_CJspeed(x,y):
     m = float(Y)/float(n)
 
     den = (X3*float(n) - X2*X)
-    temp = (den*(X*X2-X3*float(n))+X2*X2*(X*X-float(n)*X2)-X4*float(n)*(X*X-X2*float(n)))
+    temp = (den*(X*X2-X3*float(n))+X2*X2*(X*X-float(n)*X2)-X4*float(n)*\
+        (X*X-X2*float(n)))
     temp2 = (den*(Y*X2-Y2*float(n)) + (Y1*float(n)-Y*X)*(X4*float(n)-X2*X2))
 
     b = temp2/temp
@@ -107,7 +108,7 @@ def LSQ_CJspeed(x,y):
     k= 0; SSE = 0.0; SST = 0.0;
 
     f = zeros(size(x),float)
-    
+
     while k < size(x):
         f[k] = a*x[k]**2 + b*x[k] + c
         SSE = SSE + (y[k] - f[k])**2
@@ -116,6 +117,7 @@ def LSQ_CJspeed(x,y):
     R2 = 1 - SSE/SST
 
     return [a,b,c,R2,SSE,SST]
+'''
 
 def hug_fr(x,vb,h1,P1,v1,gas):
     """
@@ -142,12 +144,12 @@ def hug_fr(x,vb,h1,P1,v1,gas):
     gas.TD = x, 1.0/vb
     hb1 = gas.enthalpy_mass
     Pb = gas_constant*x/(gas.mean_molecular_weight*vb)
-    
+
     hb2 = h1 + 0.5*(Pb-P1)*(vb+v1)
     return hb2-hb1
-    
+
 def hug_eq(x,vb,h1,P1,v1,gas):
-    """ 
+    """
 
     hug_eq
     Algebraic expressions of equilibrium (product) Hugoniot pressure and enthalpy. Passed to root solver 'fsolve'.
@@ -174,4 +176,4 @@ def hug_eq(x,vb,h1,P1,v1,gas):
     Pb = gas_constant*x/(gas.mean_molecular_weight*vb)
     hb2 = h1 + 0.5*(Pb-P1)*(vb+v1)
     return hb2-hb1
-    
+
