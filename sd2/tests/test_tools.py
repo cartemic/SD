@@ -3,9 +3,9 @@
 Test functions in tools.py
 """
 
-from .. import tools
 from random import uniform, choice
 import string
+from .. import tools
 
 
 def test_perturb():

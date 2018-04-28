@@ -52,26 +52,26 @@ def using_reynolds_iterative_method(working_gas,
 
     # Set initial state
     initial = {
-               'density': initial_state_gas.density,
-               'volume': 1 / initial_state_gas.density,
-               'pressure': initial_state_gas.P
-               }
+        'density': initial_state_gas.density,
+        'volume': 1 / initial_state_gas.density,
+        'pressure': initial_state_gas.P
+        }
 
     # Set initial delta values
     delta = {
-             'temperature': 1000.,
-             'volume': 1000.,
-             'pressure': 1000.,
-             'velocity': 1000.
-             }
+        'temperature': 1000.,
+        'volume': 1000.,
+        'pressure': 1000.,
+        'velocity': 1000.
+        }
 
     # Set guess values
     guess = {
-             'temperature': 2000.,
-             'volume': initial['volume'] / density_ratio,
-             'density': density_ratio / initial['volume'],
-             'initial_velocity': 2000.
-             }
+        'temperature': 2000.,
+        'volume': initial['volume'] / density_ratio,
+        'density': density_ratio / initial['volume'],
+        'initial_velocity': 2000.
+        }
 
     # Add pressure and enthalpy to guess dictionary
     guess.update(get_state.equilibrium(working_gas,
@@ -80,10 +80,10 @@ def using_reynolds_iterative_method(working_gas,
 
     loop_counter = 0
     while ((abs(delta['temperature']) >
-           error_tol_temperature * guess['temperature'])
+            error_tol_temperature * guess['temperature'])
            or
            (abs(delta['velocity']) >
-           error_tol_specific_volume * guess['initial_velocity'])):
+            error_tol_specific_volume * guess['initial_velocity'])):
 
         # Manage loop count
         loop_counter += 1
@@ -96,11 +96,12 @@ def using_reynolds_iterative_method(working_gas,
         # a numpy array, which will be the negative of the ordinate vector, b,
         # for the linear equation Ax = b
         ordinate_vector = (
-                           calculate_error.
-                           equilibrium(working_gas,
-                                       initial_state_gas,
-                                       guess['initial_velocity']) * -1
-                           )
+            calculate_error.
+            equilibrium(
+                working_gas,
+                initial_state_gas,
+                guess['initial_velocity']) * -1
+            )
 
         delta['temperature'] = guess['temperature'] * 0.02
 
@@ -116,14 +117,14 @@ def using_reynolds_iterative_method(working_gas,
         # enthalpy and pressure, and divide by temperature delta to get rates
         # WRT temperature
         temperature_partials = (
-                                calculate_error.
-                                equilibrium(
-                                            working_gas,
-                                            initial_state_gas,
-                                            perturbed['temperature']
-                                            ) +
-                                ordinate_vector
-                                )
+            calculate_error.
+            equilibrium(
+                working_gas,
+                initial_state_gas,
+                perturbed['temperature']
+                ) +
+            ordinate_vector
+            )
         temperature_partials /= delta['temperature']
 
         # Perturb velocity guess -- temperature and enthalpy are not affected
@@ -135,14 +136,14 @@ def using_reynolds_iterative_method(working_gas,
         # enthalpy and pressure, and divide by velocity delta to get rates
         # WRT velocity
         velocity_partials = (
-                             calculate_error.
-                             equilibrium(
-                                         working_gas,
-                                         initial_state_gas,
-                                         perturbed['initial_velocity']
-                                         ) +
-                             ordinate_vector
-                             )
+            calculate_error.
+            equilibrium(
+                working_gas,
+                initial_state_gas,
+                perturbed['initial_velocity']
+                ) +
+            ordinate_vector
+            )
         velocity_partials /= delta['initial_velocity']
 
         # build coefficient matrix, A, for Ax = b
@@ -151,26 +152,27 @@ def using_reynolds_iterative_method(working_gas,
 
         # Solve Ax = b
         [delta['temperature'],
-         delta['initial_velocity']] = np.linalg.solve(coefficient_matrix,
-                                                      ordinate_vector)
+         delta['initial_velocity']] = np.linalg.solve(
+             coefficient_matrix,
+             ordinate_vector
+             )
 
         # Limit temperature delta to 20% of current guess
         max_temperature_delta = guess['temperature'] * 0.2
         if abs(delta['temperature']) > max_temperature_delta:
             delta['temperature'] *= (
-                                     max_temperature_delta /
-                                     abs(delta['temperature'])
-                                     )
+                max_temperature_delta / abs(delta['temperature'])
+                )
 
         # Update guess values
         guess['temperature'] += delta['temperature']
         guess['initial_velocity'] += delta['initial_velocity']
         guess.update(
-                     get_state.equilibrium(
-                                           working_gas,
-                                           guess['density'],
-                                           guess['temperature']
-                                           )
-                     )
+            get_state.equilibrium(
+                working_gas,
+                guess['density'],
+                guess['temperature']
+                )
+            )
 
     return [working_gas, guess['initial_velocity']]
