@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr 27 16:16:06 2018
-
-@author: cartemic
+Test functions in states.py
 """
 
 import cantera as ct
-from .. import get_state
+from .. import states
 
 
 def test_equilibrium():
@@ -16,7 +14,7 @@ def test_equilibrium():
     # Initialize gas object and collect function result
     test_gas = ct.Solution('gri30.cti')
     test_gas.TPX = 300, 101325, 'H2:2, O2:1'
-    test_result = get_state.equilibrium(
+    test_result = states.get_equilibrium_properties(
         test_gas,
         test_gas.density,
         test_gas.T
@@ -37,7 +35,7 @@ def test_frozen():
     # Initialize gas object and collect function result
     test_gas = ct.Solution('gri30.cti')
     test_gas.TPX = 300, 101325, 'H2:2, O2:1'
-    test_result = get_state.frozen(
+    test_result = states.get_frozen_properties(
         test_gas,
         test_gas.density,
         test_gas.T

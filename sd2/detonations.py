@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions for calculating Chapman-Jouguet wave speeds using various solution
-methods.
+Functions for detonation calculations.
 
 Original functions from Shock and Detonation Toolbox
 http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
@@ -11,15 +10,15 @@ import warnings
 import numpy as np
 import cantera as ct
 from scipy.optimize import curve_fit
-from . import tools, calculate_error, get_state
+from . import tools, calculate_error, states
 
 
-def state_and_speed(working_gas,
-                    initial_state_gas,
-                    error_tol_temperature,
-                    error_tol_specific_volume,
-                    density_ratio,
-                    max_iterations=500):
+def calculate_cj_state(working_gas,
+                       initial_state_gas,
+                       error_tol_temperature,
+                       error_tol_specific_volume,
+                       density_ratio,
+                       max_iterations=500):
     """
     This function calculates the Chapman-Jouguet state and wave speed using
     Reynolds' iterative method.
@@ -64,7 +63,7 @@ def state_and_speed(working_gas,
         'temperature': 1000.,
         'volume': 1000.,
         'pressure': 1000.,
-        'initial_velocity': 1000.
+        'velocity': 1000.
         }
 
     # Set guess values
@@ -72,27 +71,29 @@ def state_and_speed(working_gas,
         'temperature': 2000.,
         'volume': initial['volume'] / density_ratio,
         'density': density_ratio / initial['volume'],
-        'initial_velocity': 2000.
+        'velocity': 2000.
         }
 
     # Add pressure and enthalpy to guess dictionary
-    guess.update(get_state.equilibrium(working_gas,
-                                       guess['density'],
-                                       guess['temperature']))
+    guess.update(states.get_equilibrium_properties(
+        working_gas,
+        guess['density'],
+        guess['temperature'])
+    )
 
     loop_counter = 0
     while ((abs(delta['temperature']) >
             error_tol_temperature * guess['temperature'])
            or
-           (abs(delta['initial_velocity']) >
-            error_tol_specific_volume * guess['initial_velocity'])):
+           (abs(delta['velocity']) >
+            error_tol_specific_volume * guess['velocity'])):
 
         # Manage loop count
         loop_counter += 1
         if loop_counter == max_iterations:
             warnings.warn('No convergence within {0} iterations'.
                           format(max_iterations))
-            return [working_gas, guess['initial_velocity']]
+            return [working_gas, guess['velocity']]
 
         # Calculate pressure and enthalpy error for current guess values as
         # a numpy array, which will be the negative of the ordinate vector, b,
@@ -102,17 +103,20 @@ def state_and_speed(working_gas,
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                guess['initial_velocity']) * -1
+                guess['velocity']) * -1
             )
-
-        delta['temperature'] = guess['temperature'] * 0.02
 
         # Perturb temperature guess and find corresponding pressure and
         # enthalpy values
+        delta['temperature'] = guess['temperature'] * 0.02
         perturbed = tools.perturb('temperature', guess, delta)
-        perturbed.update(get_state.equilibrium(working_gas,
-                                               perturbed['density'],
-                                               perturbed['temperature']))
+        perturbed.update(
+            states.get_equilibrium_properties(
+                working_gas,
+                perturbed['density'],
+                perturbed['temperature']
+                )
+            )
 
         # Calculate pressure and enthalpy error for temperature-perturbed
         # state, add (negative) ordinate vector to get error deltas for
@@ -123,15 +127,15 @@ def state_and_speed(working_gas,
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                perturbed['initial_velocity']
+                perturbed['velocity']
                 ) +
             ordinate_vector
             )
         temperature_partials /= delta['temperature']
 
         # Perturb velocity guess -- temperature and enthalpy are not affected
-        delta['initial_velocity'] = guess['initial_velocity'] * 0.02
-        perturbed = tools.perturb('initial_velocity', guess, delta)
+        delta['velocity'] = guess['velocity'] * 0.02
+        perturbed = tools.perturb('velocity', guess, delta)
 
         # Calculate pressure and enthalpy error for velocity-perturbed
         # state, add (negative) ordinate vector to get error deltas for
@@ -142,11 +146,11 @@ def state_and_speed(working_gas,
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                perturbed['initial_velocity']
+                perturbed['velocity']
                 ) +
             ordinate_vector
             )
-        velocity_partials /= delta['initial_velocity']
+        velocity_partials /= delta['velocity']
 
         # build coefficient matrix, A, for Ax = b
         coefficient_matrix = np.array([temperature_partials,
@@ -154,7 +158,7 @@ def state_and_speed(working_gas,
 
         # Solve Ax = b
         [delta['temperature'],
-         delta['initial_velocity']] = np.linalg.solve(
+         delta['velocity']] = np.linalg.solve(
              coefficient_matrix,
              ordinate_vector
              )
@@ -168,25 +172,25 @@ def state_and_speed(working_gas,
 
         # Update guess values
         guess['temperature'] += delta['temperature']
-        guess['initial_velocity'] += delta['initial_velocity']
+        guess['velocity'] += delta['velocity']
         guess.update(
-            get_state.equilibrium(
+            states.get_equilibrium_properties(
                 working_gas,
                 guess['density'],
                 guess['temperature']
                 )
             )
 
-    return [working_gas, guess['initial_velocity']]
+    return [working_gas, guess['velocity']]
 
 
-def speed(initial_pressure,
-          initial_temperature,
-          species_mole_fractions,
-          mechanism,
-          return_r_squared=False):
+def calculate_cj_speed(initial_pressure,
+                       initial_temperature,
+                       species_mole_fractions,
+                       mechanism,
+                       return_r_squared=False):
     """
-
+UPDATE DOCSTRING
     CJspeed
     Calculates CJ detonation velocity
 
@@ -254,7 +258,7 @@ def speed(initial_pressure,
                 species_mole_fractions
                 ]
             [working_gas,
-             temp] = state_and_speed(
+             temp] = calculate_cj_state(
                  working_gas,
                  initial_state_gas,
                  error_tol_temperature,

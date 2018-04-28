@@ -7,7 +7,7 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 """
 
 
-def equilibrium(gas, density, temperature):
+def get_equilibrium_properties(gas, density, temperature):
     """
     This function calculates the equilibrium pressure and enthalpy given
     temperature and density
@@ -37,7 +37,7 @@ def equilibrium(gas, density, temperature):
     return {'pressure': pressure, 'enthalpy': enthalpy}
 
 
-def frozen(gas, density, temperature):
+def get_frozen_properties(gas, density, temperature):
     """
     This function calculates the frozen pressure and enthalpy given temperature
     and density

@@ -10,11 +10,13 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 import numpy as np
 
 
-def equilibrium(working_gas, initial_state_gas, initial_velocity_guess):
+def equilibrium(working_gas,
+                initial_state_gas,
+                initial_velocity_guess):
     """
     This function uses the momentum and energy conservation equations to
     calculate error in current pressure and enthalpy guesses. In this case,
-    state 2 is in equilibrium.
+    working state is in equilibrium.
 
     Original function: FHFP_CJ in PostShock.py
 
@@ -70,11 +72,13 @@ def equilibrium(working_gas, initial_state_gas, initial_velocity_guess):
     return np.array([enthalpy_error, pressure_error])
 
 
-def frozen(working_gas, initial_state_gas, initial_velocity_guess):
+def frozen(working_gas,
+           initial_state_gas,
+           initial_velocity_guess):
     """
     This function uses the momentum and energy conservation equations to
     calculate error in current pressure and enthalpy guesses. In this case,
-    state 2 is frozen.
+    working state is frozen.
 
     Original function: FHFP_CJ in PostShock.py
 
@@ -83,7 +87,7 @@ def frozen(working_gas, initial_state_gas, initial_velocity_guess):
     Parameters
     ----------
     working_gas : cantera gas object
-        A cantera gas object used for calculations (???).
+        A cantera gas object used for calculations.
     initial_state_gas : cantera gas object
         A cantera gas object for the working gas mixture in its initial,
         undetonated state.
@@ -103,36 +107,94 @@ def frozen(working_gas, initial_state_gas, initial_velocity_guess):
                'velocity': initial_velocity_guess
                }
 
-    frozen = {
+    working = {
               'pressure': working_gas.P,
               'enthalpy': working_gas.enthalpy_mass,
               'density': working_gas.density,
               }
 
-    frozen['velocity'] = initial['velocity'] * (initial['density'] /
-                                                frozen['density'])
+    working['velocity'] = initial['velocity'] * (initial['density'] /
+                                                 working['density'])
 
-    # The frozen squared velocity is the only part of this which differs
+    # The working squared velocity is the only part of this which differs
     # from the equilibrium() function
     squared_velocity = {
                     'initial': initial['velocity']**2,
-                    'frozen': (
-                                    frozen['velocity'] *
+                    'working': (
+                                    working['velocity'] *
                                     initial['density'] /
-                                    frozen['density']
+                                    working['density']
                                     )**2
                     }
 
-    enthalpy_error = ((frozen['enthalpy'] +
-                       0.5 * squared_velocity['frozen']) -
+    enthalpy_error = ((working['enthalpy'] +
+                       0.5 * squared_velocity['working']) -
                       (initial['enthalpy'] +
                        0.5 * squared_velocity['initial']))
 
-    pressure_error = ((frozen['pressure'] +
-                       frozen['density'] *
-                       squared_velocity['frozen']) -
+    pressure_error = ((working['pressure'] +
+                       working['density'] *
+                       squared_velocity['working']) -
                       (initial['pressure'] +
                        initial['density'] *
                        squared_velocity['initial']))
 
     return np.array([enthalpy_error, pressure_error])
+
+
+def reflected_shock_frozen(shock_speed,
+                           working_gas,
+                           post_shock_gas):
+    """
+    This function uses the momentum and energy conservation equations to
+    calculate error in current pressure and enthalpy guesses during reflected
+    shock calculations. In this case, working state is frozen.
+
+    Original function: FHFP_reflected_fr in reflections.py
+
+    Parameters
+    ----------
+    shock_speed : float
+        Current post-incident-shock lab frame particle speed
+    working_gas : cantera gas object
+        A cantera gas object used for calculations.
+    post_shock_gas : cantera gas object
+        A cantera gas object at post-incident-shock state (already computed)
+
+    Returns
+    -------
+    numpy array
+        A numpy array of errors in [enthalpy, pressure]
+    """
+    post_shock = {
+        'pressure': post_shock_gas.P,
+        'enthalpy': post_shock_gas.enthalpy_mass,
+        'density': post_shock_gas.density
+        }
+
+    working = {
+        'pressure': working_gas.P,
+        'enthalpy': working_gas.enthalpy_mass,
+        'density': working_gas.density
+        }
+
+    enthalpy_error = (
+        working['enthalpy'] -
+        post_shock['enthalpy'] -
+        0.5 * (shock_speed**2)*(
+            (working['density'] / post_shock['density']) + 1
+            ) /
+        (working['density'] / post_shock['density'] - 1)
+        )
+
+    pressure_error = (
+        working['pressure'] -
+        post_shock['pressure'] -
+        working['density'] *
+        (shock_speed**2) / (
+            working['density'] /
+            post_shock['density']-1
+            )
+        )
+
+    return [enthalpy_error, pressure_error]
