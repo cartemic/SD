@@ -183,7 +183,8 @@ def state_and_speed(working_gas,
 def speed(initial_pressure,
           initial_temperature,
           species_mole_fractions,
-          mechanism):
+          mechanism,
+          return_r_squared=False):
     """
 
     CJspeed
@@ -206,11 +207,11 @@ def speed(initial_pressure,
     """
     # DECLARATIONS
     numsteps = 20
-    maxv = 2.0
-    minv = 1.5
+    max_density_ratio = 2.0
+    min_density_ratio = 1.5
 
-    w1 = np.zeros(numsteps+1, float)
-    rr = np.zeros(numsteps+1, float)
+    cj_velocity_calculations = np.zeros(numsteps+1, float)
+    density_ratio_calculations = np.zeros(numsteps+1, float)
 
     # Initialize gas objects
     initial_state_gas = ct.Solution(mechanism)
@@ -226,23 +227,27 @@ def speed(initial_pressure,
         species_mole_fractions
         ]
 
-    # INITIALIZE ERROR VALUES & CHANGE VALUES
-    ERRFT = 1e-4
-    ERRFV = 1e-4
+    # Set error tolerances for CJ state calculation
+    error_tol_temperature = 1e-4
+    error_tol_specific_volume = 1e-4
 
     counter = 1
     r_squared = 0.0
     cj_speed = 0.0
-    dnew = 0.0
+    adjusted_density_ratio = 0.0
 
     def curve_fit_function(x, a, b, c):
+        """
+        Quadratic function for least-squares curve fit of cj speed vs. density
+        ratio
+        """
         return a * x**2 + b * x + c
 
     while (counter <= 4) or (r_squared < 0.99999):
-        step = (maxv-minv)/float(numsteps)
-        i = 0
-        x = minv
-        while x <= maxv:
+        step = (max_density_ratio - min_density_ratio) / float(numsteps)
+        states_calculated = 0
+        density_ratio = min_density_ratio
+        while density_ratio <= max_density_ratio:
             working_gas.TPX = [
                 initial_temperature,
                 initial_pressure,
@@ -250,27 +255,55 @@ def speed(initial_pressure,
                 ]
             [working_gas,
              temp] = state_and_speed(
-                 working_gas, initial_state_gas,
-                 ERRFT,
-                 ERRFV,
-                 x
+                 working_gas,
+                 initial_state_gas,
+                 error_tol_temperature,
+                 error_tol_specific_volume,
+                 density_ratio
                  )
-            w1[i] = temp
-            rr[i] = working_gas.density / initial_state_gas.density
-            i += 1
-            x += step
-        # [a, b, c, R2, SSE, SST] = LSQ_CJspeed(rr, w1)
-        # Get curve fit and R^2
-        [popt, _] = curve_fit(curve_fit_function, rr, w1)
-        residuals = w1 - curve_fit_function(rr, *popt)
-        ss_residual = np.sum(residuals**2)
-        ss_total = np.sum((w1 - np.mean(w1))**2)
-        r_squared = 1 - (ss_residual / ss_total)
+            cj_velocity_calculations[states_calculated] = temp
+            density_ratio_calculations[states_calculated] = (
+                working_gas.density /
+                initial_state_gas.density
+                )
+            states_calculated += 1
+            density_ratio += step
 
-        dnew = -popt[1] / (2. * popt[0])
-        minv = dnew - dnew*0.001
-        maxv = dnew + dnew*0.001
+        # Get curve fit
+        [curve_fit_coefficients, _] = curve_fit(
+            curve_fit_function,
+            density_ratio_calculations,
+            cj_velocity_calculations
+            )
+
+        # Calculate R^2 value
+        residuals = cj_velocity_calculations - curve_fit_function(
+            density_ratio_calculations,
+            *curve_fit_coefficients
+            )
+        r_squared = 1 - (
+            np.sum(residuals**2) /
+            np.sum(
+                (
+                    cj_velocity_calculations -
+                    np.mean(cj_velocity_calculations)
+                    )**2
+                )
+            )
+
+        adjusted_density_ratio = (
+            -curve_fit_coefficients[1] /
+            (2. * curve_fit_coefficients[0])
+            )
+        min_density_ratio = adjusted_density_ratio * (1 - 0.001)
+        max_density_ratio = adjusted_density_ratio * (1 + 0.001)
         counter += 1
 
-    cj_speed = curve_fit_function(dnew, *popt)
-    return [cj_speed, r_squared]
+    cj_speed = curve_fit_function(
+        adjusted_density_ratio,
+        *curve_fit_coefficients
+        )
+    if return_r_squared:
+        return [cj_speed, r_squared]
+    else:
+        return cj_speed
