@@ -58,7 +58,7 @@ def reflected_fr(gas1,gas2,gas3,UI):
     return [p3,UR,gas3]
 '''
 
-
+'''
 def reflected_eq(gas1,gas2,gas3,UI):
     """
 
@@ -108,7 +108,7 @@ def reflected_eq(gas1,gas2,gas3,UI):
     UR = (p3-p2)/u2/rho2-u2;
 
     return [p3,UR,gas3]
-
+'''
 '''
 def PostReflectedShock_fr(u2, gas2,gas3):
     """

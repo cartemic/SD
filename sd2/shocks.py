@@ -13,10 +13,11 @@ import numpy as np
 from . import tools, states, calculate_error
 
 
-def calculate_reflected_frozen_shock_state_from_zero(initial_state_gas,
-                                                     post_shock_gas,
-                                                     working_gas,
-                                                     incident_shock_speed):
+def get_reflected_frozen_state_0(
+        initial_state_gas,
+        post_shock_gas,
+        working_gas,
+        incident_shock_speed):
     """
 
     reflected_fr
@@ -58,7 +59,7 @@ def calculate_reflected_frozen_shock_state_from_zero(initial_state_gas,
 
     # BASIC PRELIMINARY GUESS
     working = {
-            'volume': 0.2 / post_shock['density']
+        'volume': 0.2 / post_shock['density']
         }
 
     working.update({
@@ -83,7 +84,7 @@ def calculate_reflected_frozen_shock_state_from_zero(initial_state_gas,
         working['pressure'],
         post_shock_gas.X
         ]
-    working_gas = calculate_reflected_frozen_shock_state(
+    working_gas = get_reflected_frozen_state(
         particle_speed,
         post_shock_gas,
         working_gas
@@ -100,10 +101,11 @@ def calculate_reflected_frozen_shock_state_from_zero(initial_state_gas,
     return [working['pressure'], reflected_shock_speed, working_gas]
 
 
-def calculate_reflected_frozen_shock_state(particle_speed,
-                                           post_shock_gas,
-                                           working_gas,
-                                           max_iterations=500):
+def get_reflected_frozen_state(
+        particle_speed,
+        post_shock_gas,
+        working_gas,
+        max_iterations=500):
     """
 
     PostReflectedShock_fr
@@ -259,10 +261,90 @@ def calculate_reflected_frozen_shock_state(particle_speed,
     return working_gas
 
 
-def calculate_reflected_equilibrium_shock_state(particle_speed,
-                                                post_shock_gas,
-                                                working_gas,
-                                                max_iterations=500):
+def get_reflected_equil_state_0(
+        initial_state_gas,
+        post_shock_gas,
+        working_gas,
+        incident_shock_speed):
+    """
+
+    reflected_eq
+    Calculates equilibrium post-reflected-shock state assumming u1 = 0
+
+    FUNCTION
+    SYNTAX:
+    [p3,UR,gas3] = reflected_eq(gas1,gas2,gas3,UI)
+
+    INPUT:
+    gas1 = gas object at initial state
+    gas2 = gas object at post-incident-shock state (already computed)
+    gas3 = working gas object
+    UI = incident shock speed (m/s)
+
+    OUTPUT:
+    p3 = post-reflected-shock pressure (Pa)
+    UR = reflected shock speed (m/s)
+    gas3 = gas object at equilibrium post-reflected-shock state
+
+    """
+    initial = {
+        'pressure': initial_state_gas.P,
+        'volume': 1 / initial_state_gas.density
+        }
+
+    reflected = {
+        'pressure': post_shock_gas.P,
+        'density': post_shock_gas.density,
+        'volume': 1 / post_shock_gas.density,
+        'temperature': post_shock_gas.T
+        }
+    reflected['velocity'] = sqrt(
+        (reflected['pressure'] - initial['pressure']) *
+        (initial['volume'] - reflected['volume'])
+        )
+
+    working = {
+        'volume': 0.2 / reflected['density']
+        }
+    working['pressure'] = (
+        reflected['pressure'] +
+        reflected['density'] *
+        (incident_shock_speed**2) *
+        (1 - working['volume'] / reflected['volume'])
+        )
+    working['temperature'] = (
+        reflected['temperature'] *
+        working['pressure'] *
+        working['volume'] /
+        (reflected['pressure'] * reflected['volume'])
+        )
+
+    working_gas.TPX = [
+        working['temperature'],
+        working['pressure'],
+        post_shock_gas.X
+        ]
+    working_gas = get_reflected_equil_state(
+        reflected['velocity'],
+        post_shock_gas,
+        working_gas
+        )
+    working['pressure'] = working_gas.P
+    reflected_shock_speed = (
+        (working['pressure'] - reflected['pressure']) /
+        reflected['velocity'] /
+        reflected['density'] -
+        reflected['velocity']
+        )
+
+    return [working['pressure'], reflected_shock_speed, working_gas]
+
+
+def get_reflected_equil_state(
+        particle_speed,
+        post_shock_gas,
+        working_gas,
+        max_iterations=500):
     """
 
     PostReflectedShock_eq
