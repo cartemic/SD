@@ -19,25 +19,29 @@ def get_reflected_frozen_state_0(
         working_gas,
         incident_shock_speed):
     """
+    This function calculates frozen post-reflected-shock state assumming u1 = 0
 
-    reflected_fr
-    Calculates frozen post-reflected-shock state assumming u1 = 0
+    Original function: reflected_fr in reflections.py
 
-    FUNCTION
-    SYNTAX
-    [p3,UR,working_gas] = reflected_fr(gas1,post_shock_gas,working_gas,UI)
+    Parameters
+    ----------
+    initial_state_gas : cantera gas object
+        gas object at initial state
+    post_shock_gas : cantera gas object
+        gas object at post-incident-shock state (already computed)
+    working_gas : cantera gas object
+        working gas object
+    incident_shock_speed : float
+        incident shock speed (m/s)
 
-    INPUT:
-    gas1 = gas object at initial state
-    post_shock_gas = gas object at post-incident-shock state (already computed)
-    working_gas = working gas object
-    UI = incident shock speed (m/s)
-
-    OUTPUT:
-    p3 = post-reflected-shock pressure (Pa)
-    UR = reflected shock speed (m/s)
-    working_gas = gas object at frozen post-reflected-shock state
-
+    Returns
+    -------
+    working['pressure'] : float
+        post-reflected-shock pressure (Pa)
+    reflected_shock_speed : float
+        reflected shock speed (m/s)
+    working_gas : cantera gas object
+        gas object at frozen post-reflected-shock state
     """
     initial = {
         'pressure': initial_state_gas.P,
@@ -107,22 +111,26 @@ def get_reflected_frozen_state(
         working_gas,
         max_iterations=500):
     """
+    This function calculates frozen post-Reflected-shock state for a specified
+    shock velocity
 
-    PostReflectedShock_fr
-    Calculates frozen post-Reflected-shock state for a specified shock velocity
+    Original function: PostReflectedShock_fr in reflections.py
 
-    FUNCTION
-    SYNTAX
-    [working_gas] = PostReflectedShock_fr(u2,post_shock_gas,working_gas)
+    Parameters
+    ----------
+    particle_speed : float
+        current post-incident-shock lab frame particle speed
+    post_shock_gas : cantera gas object
+        gas object at post-incident-shock state (already computed)
+    working_gas : cantera gas object
+        working gas object
+    max_iterations : int
+        maximum number of loop iterations
 
-    INPUT
-    u2 = current post-incident-shock lab frame particle speed
-    post_shock_gas = gas object at post-incident-shock state (already computed)
-    working_gas = working gas object
-
-    OUTPUT
-    working_gas = gas object at frozen post-reflected-shock state
-
+    Returns
+    -------
+    working_gas : cantera gas object
+        gas object at frozen post-reflected-shock state
     """
     # Set error tolerances for state calculation
     error_tol_temperature = 1e-4
@@ -267,25 +275,30 @@ def get_reflected_equil_state_0(
         working_gas,
         incident_shock_speed):
     """
+    This function calculates equilibrium post-reflected-shock state assumming
+    u1 = 0
 
     reflected_eq
-    Calculates equilibrium post-reflected-shock state assumming u1 = 0
 
-    FUNCTION
-    SYNTAX:
-    [p3,UR,gas3] = reflected_eq(gas1,gas2,gas3,UI)
+    Parameters
+    ----------
+    initial_state_gas : cantera gas object
+        gas object at initial state
+    post_shock_gas : cantera gas object
+        gas object at post-incident-shock state (already computed)
+    working_gas : cantera gas object
+        working gas object
+    incident_shock_speed : float
+        incident shock speed (m/s)
 
-    INPUT:
-    gas1 = gas object at initial state
-    gas2 = gas object at post-incident-shock state (already computed)
-    gas3 = working gas object
-    UI = incident shock speed (m/s)
-
-    OUTPUT:
-    p3 = post-reflected-shock pressure (Pa)
-    UR = reflected shock speed (m/s)
-    gas3 = gas object at equilibrium post-reflected-shock state
-
+    Returns
+    -------
+    working['pressure'] : float
+        post-reflected-shock pressure (Pa)
+    reflected_shock_speed : float
+        reflected shock speed (m/s)
+    working_gas : cantera gas object
+        gas object at equilibrium post-reflected-shock state
     """
     initial = {
         'pressure': initial_state_gas.P,
@@ -346,23 +359,26 @@ def get_reflected_equil_state(
         working_gas,
         max_iterations=500):
     """
+    This function calculates equilibrium post-reflected-shock state for a
+    specified shock velocity
 
-    PostReflectedShock_eq
-    Calculates equilibrium post-reflected-shock state for a specified shock
-    velocity
+    Original function: PostReflectedShock_eq in reflections.py
 
-    FUNCTION
-    SYNTAX
-    [gas3] = PostReflectedShock_fr(u2,gas2,gas3)
+    Parameters
+    ----------
+    particle_speed : float
+        current post-incident-shock lab frame particle speed
+    post_shock_gas : cantera gas object
+        gas object at post-incident-shock state (already computed)
+    working_gas : cantera gas object
+        working gas object
+    max_iterations : int
+        maximum number of loop iterations
 
-    INPUT
-    u2 = current post-incident-shock lab frame particle speed
-    gas2 = gas object at post-incident-shock state (already computed)
-    gas3 = working gas object
-
-    OUTPUT
-    gas3 = gas object at equilibrium post-reflected-shock state
-
+    Returns
+    -------
+    working_gas : cantera gas object
+        gas object at equilibrium post-reflected-shock state
     """
     # Set error tolerances for state calculation
     error_tol_temperature = 1e-4

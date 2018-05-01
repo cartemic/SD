@@ -190,24 +190,27 @@ def calculate_cj_speed(initial_pressure,
                        mechanism,
                        return_r_squared=False):
     """
-UPDATE DOCSTRING
-    CJspeed
-    Calculates CJ detonation velocity
+    This function calculates CJ detonation velocity
 
-    FUNCTION
-    SYNTAX
-    [cj_speed,R2] = CJspeed(P1,T1,q,mech,plt_num)
+    Original function: CJspeed in PostShock.py
 
-    INPUT
-    P1 = initial pressure (Pa)
-    T1 = initial temperature (K)
-    q = string of reactant species mole fractions
-    mech = cti file containing mechanism data (i.e. 'gri30.cti')
+    Parameters
+    ----------
+    initial_pressure : float
+        initial pressure (Pa)
+    initial_temperature : float
+        initial temperature (K)
+    species_mole_fractions : str
+        string of reactant species mole fractions
+    mechanism : str
+        cti file containing mechanism data (e.g. 'gri30.cti')
 
-    OUTPUT
-    cj_speed = CJ detonation speed (m/s)
-    R2 = R-squared value of LSQ curve fit
-
+    Returns
+    -------
+    cj_speed : float
+        CJ detonation speed (m/s)
+    r_squared : float
+        R-squared value of least-squares parabolic curve fit
     """
     # DECLARATIONS
     numsteps = 20
