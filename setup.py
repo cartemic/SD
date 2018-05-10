@@ -41,7 +41,7 @@ setup_requires = ['pytest-runner'] if needs_pytest else []
 
 setup(
     name='sd2',
-    version='0.1.0',
+    version=__version__,
     description='A SDToolbox fork for python',
     author='Mick Carter',
     author_email='cartemic@oregonstate.edu',
