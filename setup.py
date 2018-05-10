@@ -29,6 +29,8 @@ except (ImportError, OSError, IOError):
 
 install_requires = [
     'numpy',
+    'scipy',
+    'cantera'
 ]
 
 tests_require = [
@@ -43,22 +45,13 @@ setup(
     name='sd2',
     version=__version__,
     description='A SDToolbox fork for python',
+    long_description=desc,
     author='Mick Carter',
     author_email='cartemic@oregonstate.edu',
-    url='https://github.com/cartemic/SD2',
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 3',
-    ],
     license='BSD-3-Clause',
-    python_requires='>=2.7.*, >=3.5.*',
-    zip_safe=False,
-    package=find_packages(),
-    include_package_data=True,
-)
+    python_requires='>=3.5.*',
+    packages=['sd2', 'sd2.tests']
+    )
 
 if __name__ == "__main__":
     setup()
