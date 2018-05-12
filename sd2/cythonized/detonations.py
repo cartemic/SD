@@ -10,7 +10,8 @@ import warnings
 import numpy as np
 import cantera as ct
 from scipy.optimize import curve_fit
-from . import tools, calculate_error, states
+import cj_state
+#from . import tools, calculate_error, states
 
 
 def calculate_cj_state(working_gas,
@@ -240,7 +241,6 @@ def calculate_cj_speed(initial_pressure,
 
     counter = 1
     r_squared = 0.0
-    cj_speed = 0.0
     adjusted_density_ratio = 0.0
 
     def curve_fit_function(x, a, b, c):
@@ -261,7 +261,7 @@ def calculate_cj_speed(initial_pressure,
                 species_mole_fractions
                 ]
             [working_gas,
-             temp] = calculate_cj_state(
+             temp] = cj_state.calculate(
                  working_gas,
                  initial_state_gas,
                  error_tol_temperature,
