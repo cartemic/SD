@@ -188,7 +188,8 @@ def calculate_cj_speed(initial_pressure,
                        initial_temperature,
                        species_mole_fractions,
                        mechanism,
-                       return_r_squared=False):
+                       return_r_squared=False,
+                       return_state=False):
     """
     This function calculates CJ detonation velocity
 
@@ -310,7 +311,11 @@ def calculate_cj_speed(initial_pressure,
         adjusted_density_ratio,
         *curve_fit_coefficients
         )
-    if return_r_squared:
+    if return_r_squared and return_state:
+        return [cj_speed, r_squared, working_gas]
+    elif return_state:
+        return [cj_speed, working_gas]
+    elif return_r_squared:
         return [cj_speed, r_squared]
     else:
         return cj_speed

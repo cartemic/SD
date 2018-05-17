@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - LICENSE
 
 
-## [0.1.1] - 2018-05-10
+## [0.1.a5] - 2018-05-10
 ### Changed
 - version number to make twine happy
+
+## [0.1.a6] - 2018-05-17
+### Changed
+- added state output to detonations.cj_speed()
