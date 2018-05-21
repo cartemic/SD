@@ -19,7 +19,7 @@ def get_reflected_frozen_state_0(
         working_gas,
         incident_shock_speed):
     """
-    This function calculates frozen post-reflected-shock state assumming u1 = 0
+    This function calculates frozen post-reflected-shock state assuming u1 = 0
 
     Original function: reflected_fr in reflections.py
 
@@ -275,7 +275,7 @@ def get_reflected_equil_state_0(
         working_gas,
         incident_shock_speed):
     """
-    This function calculates equilibrium post-reflected-shock state assumming
+    This function calculates equilibrium post-reflected-shock state assuming
     u1 = 0
 
     reflected_eq
