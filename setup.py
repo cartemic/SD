@@ -51,7 +51,10 @@ setup(
     license='BSD-3-Clause',
     python_requires='>=3.5.*',
     packages=['sd2', 'sd2.tests'],
-    package_dir={'sd2': 'sd2'}
+    package_dir={'sd2': 'sd2'},
+    install_requires=install_requires,
+    tests_require=tests_require,
+    setup_requires=setup_requires
     )
 
 if __name__ == "__main__":
