@@ -26,10 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - added state output to detonations.cj_speed()
 
-## [0.1.a7] - 2018-05-21
+## [0.1.1] - 2018-05-21
 ### Changed
 - removed garbage from __init__.py
-
-## [0.1.a8] - 2018-05-21
-### Changed
-- added meta.yaml, which should have already been there
+- added package directory to setup.py

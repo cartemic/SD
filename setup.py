@@ -50,7 +50,8 @@ setup(
     author_email='cartemic@oregonstate.edu',
     license='BSD-3-Clause',
     python_requires='>=3.5.*',
-    packages=['sd2', 'sd2.tests']
+    packages=['sd2', 'sd2.tests'],
+    package_dir={'sd2': 'sd2'}
     )
 
 if __name__ == "__main__":
