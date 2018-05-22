@@ -45,9 +45,10 @@ setup(
     name='sd2',
     version=__version__,
     description='A SDToolbox fork for python',
-    long_description=desc,
+    longdescription=desc,
     author='Mick Carter',
     author_email='cartemic@oregonstate.edu',
+    url='https://github.com/cartemic/SD2',
     license='BSD-3-Clause',
     python_requires='>=3.5.*',
     packages=['sd2', 'sd2.tests'],
@@ -56,6 +57,3 @@ setup(
     tests_require=tests_require,
     setup_requires=setup_requires
     )
-
-if __name__ == "__main__":
-    setup()
