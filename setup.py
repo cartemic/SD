@@ -1,11 +1,7 @@
 from codecs import open
 from os import path
 import sys
-
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
@@ -50,7 +46,7 @@ setup(
     author_email='cartemic@oregonstate.edu',
     url='https://github.com/cartemic/SD2',
     license='BSD-3-Clause',
-    python_requires='>=3.5.*',
+    python_requires='>=3.6.*',
     packages=['sd2', 'sd2.tests'],
     package_dir={'sd2': 'sd2'},
     install_requires=install_requires,
