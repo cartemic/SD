@@ -252,6 +252,7 @@ def PostShock_fr(U1, P1, T1, q, mech):
     gas = shk_calc(U1, gas, gas1, ERRFT, ERRFV)
     return gas
 
+'''
 def PostShock_eq(U1, P1, T1, q, mech):
     """
 
@@ -283,6 +284,7 @@ def PostShock_eq(U1, P1, T1, q, mech):
     #CALCULATES POST-SHOCK STATE
     gas = shk_eq_calc(U1, gas, gas1, ERRFT, ERRFV)
     return gas
+'''
 
 def shk_calc(U1, gas, gas1, ERRFT, ERRFV):
     """
@@ -369,6 +371,7 @@ def shk_calc(U1, gas, gas1, ERRFT, ERRFV):
     H2 = H; r2 = r;
     return gas
 
+'''
 def shk_eq_calc(U1, gas, gas1, ERRFT, ERRFV):
     """
 
@@ -450,4 +453,4 @@ def shk_eq_calc(U1, gas, gas1, ERRFT, ERRFV):
     T2 = T; V2 = V; P2 = P;
     H2 = H; r2 = r;
     return gas
-
+'''

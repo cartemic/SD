@@ -10,6 +10,7 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 from math import sqrt
 import warnings
 import numpy as np
+import cantera as ct
 from . import tools, states, calculate_error
 
 
@@ -513,5 +514,219 @@ def get_reflected_equil_state(
                 guess['temperature']
                 )
             )
+
+    return working_gas
+
+
+def get_post_shock_eq_state(
+        wave_speed,
+        initial_pressure,
+        initial_temperature,
+        reactant_mixture,
+        mechanism,
+        error_tol_temperature=1e-4,
+        error_tol_specific_volume=1e-4,
+        max_iterations=500):
+    """
+    This function calculates equilibrium post-shock state using Reynolds'
+    iterative method
+
+    Original functions: shk_eq_calc and PostShock_eq in reflections.py
+
+    Parameters
+    ----------
+    wave_speed : float
+        speed at which the shock is traveling
+    initial_pressure : float
+        Pressure of initial state mixture (Pa)
+    initial_temperature : float
+        Temperature of initial state mixture (K)
+    reactant_mixture : str or dict
+        String or dict of reactant species moles or mole fractions
+    mechanism : str
+        Mechanism file to use (e.g. 'gri30.cti')
+    error_tol_temperature : float
+        Temperature error tolerance for iteration.
+    error_tol_specific_volume : float
+        Specific volume error tolerance for iteration.
+    max_iterations : int
+        maximum number of loop iterations
+
+    Returns
+    -------
+    working_gas : cantera gas object
+        gas object at equilibrium post-reflected-shock state
+    """
+    # set gas objects
+    initial_state_gas = ct.Solution(mechanism)
+    initial_state_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        reactant_mixture
+    ]
+    working_gas = ct.Solution(mechanism)
+    working_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        reactant_mixture
+    ]
+
+    # set initial state variables
+    initial = dict()
+    initial['density'] = initial_state_gas.density
+    initial['volume'] = 1/initial['density']
+    initial['pressure'] = initial_pressure
+    initial['temperature'] = initial_temperature
+
+    # set initial delta guess
+    delta = dict()
+    delta['temperature'] = 1000
+    delta['volume'] = 1000
+
+    # set guess state variables
+    guess = dict()
+    guess['volume'] = 0.2 * initial['volume']
+    guess['density'] = 1 / guess['volume']
+    guess['pressure'] = (
+            initial['pressure'] +
+            initial['density'] *
+            (wave_speed**2) *
+            (1 - guess['volume'] / initial['volume'])
+    )
+    guess['temperature'] = (
+            initial['temperature'] *
+            guess['pressure'] *
+            guess['volume'] /
+            (initial['pressure'] * initial['volume'])
+    )
+
+    # equilibrate working gas
+    states.get_equilibrium_properties(
+        working_gas,
+        guess['density'],
+        guess['temperature']
+    )
+
+    # calculate equilibrium state
+    loop_counter = 0
+    while (
+            (
+                    abs(delta['temperature'])
+                    >
+                    error_tol_temperature * guess['temperature']
+            )
+            or
+            (
+                    abs(delta['volume'])
+                    >
+                    error_tol_specific_volume*guess['volume']
+            )
+    ):
+        loop_counter += 1
+        if loop_counter == max_iterations:
+            warnings.warn(
+                "No convergence in {0} iterations".format(loop_counter)
+            )
+            return working_gas
+
+        # calculate enthalpy and pressure error for current guess
+        [err_enthalpy, err_pressure] = calculate_error.equilibrium(
+            working_gas,
+            initial_state_gas,
+            wave_speed
+        )
+
+        # equilibrate working gas with perturbed temperature
+        delta['temperature'] = 0.02 * guess['temperature']
+        states.get_equilibrium_properties(
+            working_gas,
+            guess['density'],
+            guess['temperature'] + delta['temperature']
+        )
+
+        # calculate enthalpy and pressure error for perturbed temperature
+        [err_enthalpy_perturbed,
+         err_pressure_perturbed] = calculate_error.equilibrium(
+            working_gas,
+            initial_state_gas,
+            wave_speed
+        )
+
+        # calculate temperature derivatives
+        deriv_enthalpy_temperature = (err_enthalpy_perturbed -
+                                      err_enthalpy) / delta['temperature']
+        deriv_pressure_temperature = (err_pressure_perturbed -
+                                      err_pressure) / delta['temperature']
+
+        # equilibrate working gas with perturbed volume
+        delta['volume'] = 0.02 * guess['volume']
+        states.get_equilibrium_properties(
+            working_gas,
+            1 / (guess['volume'] + delta['volume']),
+            guess['temperature']
+        )
+
+        # calculate enthalpy and pressure error for perturbed specific volume
+        [err_enthalpy_perturbed,
+         err_pressure_perturbed] = calculate_error.equilibrium(
+            working_gas,
+            initial_state_gas,
+            wave_speed
+        )
+
+        # calculate specific volume derivatives
+        deriv_enthalpy_volume = (err_enthalpy_perturbed -
+                                 err_enthalpy) / delta['volume']
+        deriv_pressure_volume = (err_pressure_perturbed -
+                                 err_pressure) / delta['volume']
+
+        # solve matrix for temperature and volume deltas
+        jacobian = (
+                deriv_enthalpy_temperature *
+                deriv_pressure_volume -
+                deriv_pressure_temperature *
+                deriv_enthalpy_volume
+        )
+        bb = [
+            deriv_pressure_volume,
+            -deriv_enthalpy_volume,
+            -deriv_pressure_temperature,
+            deriv_enthalpy_temperature
+        ]
+        aa = [-err_enthalpy, -err_pressure]
+        delta['temperature'] = (bb[0] * aa[0] +
+                                bb[1] * aa[1]) / jacobian
+        delta['volume'] = (bb[2] * aa[0] +
+                           bb[3] * aa[1]) / jacobian
+
+        # check and limit temperature delta
+        delta['temp_max'] = 0.2 * guess['temperature']
+        if abs(delta['temperature']) > delta['temp_max']:
+            delta['temperature'] = delta['temp_max'] * \
+                                   delta['temperature'] / \
+                                   abs(delta['temperature'])
+
+        # check and limit specific volume delta
+        perturbed_volume = guess['volume'] + delta['volume']
+        if perturbed_volume > initial['volume']:
+            delta['volume_max'] = 0.5 * (initial['volume'] - guess['volume'])
+        else:
+            delta['volume_max'] = 0.2 * guess['volume']
+        if abs(delta['volume']) > delta['volume_max']:
+            delta['volume'] = delta['volume_max'] * \
+                              delta['volume'] / \
+                              abs(delta['volume'])
+
+        # apply calculated and limited deltas to temperature and spec. volume
+        guess['temperature'] = guess['temperature'] + delta['temperature']
+        guess['volume'] = guess['volume'] + delta['volume']
+        guess['density'] = 1/guess['volume']
+
+        # equilibrate working gas with updated state
+        states.get_equilibrium_properties(
+            working_gas,
+            guess['density'],
+            guess['temperature']
+        )
 
     return working_gas
