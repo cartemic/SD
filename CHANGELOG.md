@@ -26,8 +26,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - added state output to detonations.cj_speed()
 
-## [0.1.1a0] - 2018-05-21
+## [0.1.1a0-4] - 2018-05-21
 ### Changed
 - removed garbage from __init__.py
 - added package directory to setup.py
 - tried more things to get conda install to work correctly
+
+## [0.1.1a5] - 2018-05-25
+### Fixed
+- Equilibrium shock reflection state calculation was fixed and checked. Results are within 0.5% of the original function at ~50% of the time. Frozen shock reflection state calculation has a major bug, and has been commented out until it can be fixed.
