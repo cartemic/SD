@@ -241,7 +241,6 @@ def calculate_cj_speed(initial_pressure,
 
     counter = 1
     r_squared = 0.0
-    cj_speed = 0.0
     adjusted_density_ratio = 0.0
 
     def curve_fit_function(x, a, b, c):
@@ -251,7 +250,7 @@ def calculate_cj_speed(initial_pressure,
         """
         return a * x**2 + b * x + c
 
-    while (counter <= 4) or (r_squared < 0.99999):
+    while (counter <= 4) and (r_squared < 0.99999 or delta_r_squared < 1e-7):
         step = (max_density_ratio - min_density_ratio) / float(numsteps)
         states_calculated = 0
         density_ratio = min_density_ratio
@@ -289,6 +288,7 @@ def calculate_cj_speed(initial_pressure,
             density_ratio_calculations,
             *curve_fit_coefficients
             )
+        old_r_squared = r_squared
         r_squared = 1 - (
             np.sum(residuals**2) /
             np.sum(
@@ -298,6 +298,7 @@ def calculate_cj_speed(initial_pressure,
                     )**2
                 )
             )
+        delta_r_squared = abs(old_r_squared - r_squared)
 
         adjusted_density_ratio = (
             -curve_fit_coefficients[1] /
@@ -311,6 +312,7 @@ def calculate_cj_speed(initial_pressure,
         adjusted_density_ratio,
         *curve_fit_coefficients
         )
+
     if return_r_squared and return_state:
         return [cj_speed, r_squared, working_gas]
     elif return_state:
