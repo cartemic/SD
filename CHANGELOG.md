@@ -35,3 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.1.1a5] - 2018-05-25
 ### Fixed
 - Equilibrium shock reflection state calculation was fixed and checked. Results are within 0.5% of the original function at ~50% of the time. Frozen shock reflection state calculation has a major bug, and has been commented out until it can be fixed.
+
+## [0.1.1a6] - 2018-06-11
+### Fixed
+- Fixed problem where cj speed calculation would loop indefinitely if R^2 didn't converge above 0.9999
