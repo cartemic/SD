@@ -24,12 +24,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.1.a6] - 2018-05-17
 ### Changed
-- added state output to detonations.cj_speed()
+- added state output to `detonations.cj_speed()`
 
 ## [0.1.1a0-4] - 2018-05-21
 ### Changed
-- removed garbage from __init__.py
-- added package directory to setup.py
+- removed garbage from `__init__.py`
+- added package directory to `setup.py`
 - tried more things to get conda install to work correctly
 
 ## [0.1.1a5] - 2018-05-25
@@ -38,4 +38,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.1.1a6] - 2018-06-11
 ### Fixed
-- Fixed problem where cj speed calculation would loop indefinitely if R^2 didn't converge above 0.9999
+- Fixed problem where CJ speed calculation would loop indefinitely if R^2 didn't converge above 0.9999
+
+## [0.1.1b] - 2018-09-07
+### Added
+- Rough CJ state temperature and pressure estimation to decrease the required number of calls to Cantera, causing an approximate order-of-magnitude speedup of CJ speed calculation
+### Changed
+- Cantera species input type suggestions to dict or str
