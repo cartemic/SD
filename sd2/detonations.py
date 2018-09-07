@@ -27,9 +27,9 @@ def calculate_cj_state(working_gas,
 
     Parameters
     ----------
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         A cantera gas object used for calculations (???).
-    initial_state_gas : cantera.composite.Solution
+    initial_state_gas : cantera gas object
         A cantera gas object for the working gas mixture in its initial,
         undetonated state.
     error_tol_temperature : float
@@ -44,7 +44,7 @@ def calculate_cj_state(working_gas,
 
     Returns
     -------
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         Gas object at equilibrium state.
     initial_velocity : float
         Initial velocity resulting in the input density ratio, in m/s.
@@ -201,14 +201,10 @@ def calculate_cj_speed(initial_pressure,
         initial pressure (Pa)
     initial_temperature : float
         initial temperature (K)
-    species_mole_fractions : dict or str
-        dictionary or string of reactant species mole fractions
+    species_mole_fractions : str
+        string of reactant species mole fractions
     mechanism : str
         cti file containing mechanism data (e.g. 'gri30.cti')
-    return_r_squared : bool
-        set true if CJ speed curve fit R^2 value is desired
-    return_state : bool
-        set true if CJ state is desired (outputs a Cantera gas object)
 
     Returns
     -------
@@ -233,14 +229,9 @@ def calculate_cj_speed(initial_pressure,
         initial_pressure,
         species_mole_fractions
         ]
-
-    guess_state = states._estimate_cj(
-        initial_temperature,
-        initial_pressure
-    )
     working_gas.TPX = [
-        guess_state['temperature'],
-        guess_state['pressure'],
+        initial_temperature,
+        initial_pressure,
         species_mole_fractions
         ]
 
@@ -250,7 +241,6 @@ def calculate_cj_speed(initial_pressure,
 
     counter = 1
     r_squared = 0.0
-    delta_r_squared = 0
     adjusted_density_ratio = 0.0
 
     def curve_fit_function(x, a, b, c):
@@ -263,10 +253,7 @@ def calculate_cj_speed(initial_pressure,
     while (counter <= 4) and (r_squared < 0.99999 or delta_r_squared < 1e-7):
         step = (max_density_ratio - min_density_ratio) / float(numsteps)
         states_calculated = 0
-        density_ratio = max(
-            working_gas.density / initial_state_gas.density,
-            min_density_ratio
-        )
+        density_ratio = min_density_ratio
         while density_ratio <= max_density_ratio:
             working_gas.TPX = [
                 initial_temperature,
@@ -302,18 +289,15 @@ def calculate_cj_speed(initial_pressure,
             *curve_fit_coefficients
             )
         old_r_squared = r_squared
-        if sum(cj_velocity_calculations) == 0:
-            r_squared = 1
-        else:
-            r_squared = 1 - (
-                np.sum(residuals**2) /
-                np.sum(
-                    (
-                        cj_velocity_calculations -
-                        np.mean(cj_velocity_calculations)
-                        )**2
-                    )
+        r_squared = 1 - (
+            np.sum(residuals**2) /
+            np.sum(
+                (
+                    cj_velocity_calculations -
+                    np.mean(cj_velocity_calculations)
+                    )**2
                 )
+            )
         delta_r_squared = abs(old_r_squared - r_squared)
 
         adjusted_density_ratio = (

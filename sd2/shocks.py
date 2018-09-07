@@ -287,11 +287,11 @@ def get_reflected_equil_state_0(
 
     Parameters
     ----------
-    initial_state_gas : cantera.composite.Solution
+    initial_state_gas : cantera gas object
         gas object at initial state
-    post_shock_gas : cantera.composite.Solution
+    post_shock_gas : cantera gas object
         gas object at post-incident-shock state (already computed)
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         working gas object
     incident_shock_speed : float
         incident shock speed (m/s)
@@ -302,7 +302,7 @@ def get_reflected_equil_state_0(
         post-reflected-shock pressure (Pa)
     reflected_shock_speed : float
         reflected shock speed (m/s)
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         gas object at equilibrium post-reflected-shock state
     """
     initial = {
@@ -375,9 +375,9 @@ def get_reflected_equil_state(
     ----------
     particle_speed : float
         current post-incident-shock lab frame particle speed
-    post_shock_gas : cantera.composite.Solution
+    post_shock_gas : cantera gas object
         gas object at post-incident-shock state (already computed)
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         working gas object
     error_tol_temperature : float
         Temperature error tolerance for iteration.
@@ -388,7 +388,7 @@ def get_reflected_equil_state(
 
     Returns
     -------
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         gas object at equilibrium post-reflected-shock state
     """
 
@@ -582,7 +582,7 @@ def get_post_shock_eq_state(
 
     Returns
     -------
-    working_gas : cantera.composite.Solution
+    working_gas : cantera gas object
         gas object at equilibrium post-reflected-shock state
     """
     # set gas objects
@@ -593,14 +593,9 @@ def get_post_shock_eq_state(
         reactant_mixture
     ]
     working_gas = ct.Solution(mechanism)
-
-    guess_state = states._estimate_cj(
-        initial_temperature,
-        initial_pressure
-    )
     working_gas.TPX = [
-        guess_state['temperature'],
-        guess_state['pressure'],
+        initial_temperature,
+        initial_pressure,
         reactant_mixture
     ]
 
