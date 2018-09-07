@@ -250,31 +250,39 @@ def calculate_cj_speed(initial_pressure,
         """
         return a * x**2 + b * x + c
 
-    while (counter <= 4) and (r_squared < 0.99999 or delta_r_squared < 1e-7):
-        step = (max_density_ratio - min_density_ratio) / float(numsteps)
-        states_calculated = 0
-        density_ratio = min_density_ratio
-        while density_ratio <= max_density_ratio:
-            working_gas.TPX = [
-                initial_temperature,
-                initial_pressure,
-                species_mole_fractions
-                ]
-            [working_gas,
-             temp] = calculate_cj_state(
-                 working_gas,
-                 initial_state_gas,
-                 error_tol_temperature,
-                 error_tol_specific_volume,
-                 density_ratio
-                 )
-            cj_velocity_calculations[states_calculated] = temp
-            density_ratio_calculations[states_calculated] = (
-                working_gas.density /
+    def calculate_over_ratio_range(
+            current_state_number,
+            current_density_ratio,
+            current_gas
+    ):
+        current_gas.TPX = [
+            initial_temperature,
+            initial_pressure,
+            species_mole_fractions
+        ]
+        [current_gas,
+         temp] = calculate_cj_state(
+            working_gas,
+            initial_state_gas,
+            error_tol_temperature,
+            error_tol_specific_volume,
+            current_density_ratio
+        )
+        current_velocity = temp
+        density_ratio_calculations[states_calculated] = (
+                current_gas.density /
                 initial_state_gas.density
-                )
-            states_calculated += 1
-            density_ratio += step
+        ) # find out if this is any different brb.
+
+
+    while (counter <= 4) and (r_squared < 0.99999 or delta_r_squared < 1e-7):
+        density_ratio_array = np.linspace(
+            min_density_ratio,
+            max_density_ratio,
+            numsteps + 1
+        )
+        for states_calculated, density_ratio in enumerate(density_ratio_array):
+            # add thing here
 
         # Get curve fit
         [curve_fit_coefficients, _] = curve_fit(
