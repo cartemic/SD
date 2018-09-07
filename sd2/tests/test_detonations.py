@@ -25,4 +25,4 @@ def test_calculate_cj_speed():
         (original_cj_speed - test_speed) /
         original_cj_speed
         )
-    assert relative_difference <= 1e-7
+    assert relative_difference <= 1e-5
