@@ -9,6 +9,7 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 import warnings
 import numpy as np
 import cantera as ct
+import multiprocessing as mp
 from scipy.optimize import curve_fit
 from . import tools, calculate_error, states
 
@@ -184,6 +185,35 @@ def calculate_cj_state(working_gas,
     return [working_gas, guess['velocity']]
 
 
+def _calculate_over_ratio_range(
+        current_state_number,
+        current_density_ratio,
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions,
+        mechanism,
+        error_tol_temperature,
+        error_tol_specific_volume
+):
+    initial_state_gas = ct.Solution(mechanism)
+    working_gas = ct.Solution(mechanism)
+    working_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions
+    ]
+    [_,
+     current_velocity] = calculate_cj_state(
+        working_gas,
+        initial_state_gas,
+        error_tol_temperature,
+        error_tol_specific_volume,
+        current_density_ratio
+    )
+
+    return current_state_number, current_velocity
+
+
 def calculate_cj_speed(initial_pressure,
                        initial_temperature,
                        species_mole_fractions,
@@ -218,29 +248,13 @@ def calculate_cj_speed(initial_pressure,
     max_density_ratio = 2.0
     min_density_ratio = 1.5
 
-    cj_velocity_calculations = np.zeros(numsteps+1, float)
-    density_ratio_calculations = np.zeros(numsteps+1, float)
-
-    # Initialize gas objects
-    initial_state_gas = ct.Solution(mechanism)
-    working_gas = ct.Solution(mechanism)
-    initial_state_gas.TPX = [
-        initial_temperature,
-        initial_pressure,
-        species_mole_fractions
-        ]
-    working_gas.TPX = [
-        initial_temperature,
-        initial_pressure,
-        species_mole_fractions
-        ]
-
     # Set error tolerances for CJ state calculation
     error_tol_temperature = 1e-4
     error_tol_specific_volume = 1e-4
 
     counter = 1
     r_squared = 0.0
+    delta_r_squared = 0.0
     adjusted_density_ratio = 0.0
 
     def curve_fit_function(x, a, b, c):
@@ -250,50 +264,46 @@ def calculate_cj_speed(initial_pressure,
         """
         return a * x**2 + b * x + c
 
-    def calculate_over_ratio_range(
-            current_state_number,
-            current_density_ratio,
-            current_gas
-    ):
-        current_gas.TPX = [
-            initial_temperature,
-            initial_pressure,
-            species_mole_fractions
-        ]
-        [current_gas,
-         temp] = calculate_cj_state(
-            working_gas,
-            initial_state_gas,
-            error_tol_temperature,
-            error_tol_specific_volume,
-            current_density_ratio
-        )
-        current_velocity = temp
-        density_ratio_calculations[states_calculated] = (
-                current_gas.density /
-                initial_state_gas.density
-        ) # find out if this is any different brb.
-
-
     while (counter <= 4) and (r_squared < 0.99999 or delta_r_squared < 1e-7):
         density_ratio_array = np.linspace(
             min_density_ratio,
             max_density_ratio,
             numsteps + 1
         )
-        for states_calculated, density_ratio in enumerate(density_ratio_array):
-            # add thing here
+
+        # parallel loop through density ratios
+        pool = mp.Pool()
+        stargs = [[number,
+                   ratio,
+                   initial_temperature,
+                   initial_pressure,
+                   species_mole_fractions,
+                   mechanism,
+                   error_tol_temperature,
+                   error_tol_specific_volume
+                   ]
+                  for number, ratio in
+                  zip(
+                      range(len(density_ratio_array)),
+                      density_ratio_array
+                  )
+                  ]
+        result = pool.starmap(_calculate_over_ratio_range, stargs)
+        result.sort()
+        cj_velocity_calculations = np.array(
+            [item for (_, item) in result]
+        )
 
         # Get curve fit
         [curve_fit_coefficients, _] = curve_fit(
             curve_fit_function,
-            density_ratio_calculations,
+            density_ratio_array,
             cj_velocity_calculations
             )
 
         # Calculate R^2 value
         residuals = cj_velocity_calculations - curve_fit_function(
-            density_ratio_calculations,
+            density_ratio_array,
             *curve_fit_coefficients
             )
         old_r_squared = r_squared
@@ -321,11 +331,7 @@ def calculate_cj_speed(initial_pressure,
         *curve_fit_coefficients
         )
 
-    if return_r_squared and return_state:
-        return [cj_speed, r_squared, working_gas]
-    elif return_state:
-        return [cj_speed, working_gas]
-    elif return_r_squared:
+    if return_r_squared:
         return [cj_speed, r_squared]
     else:
         return cj_speed
