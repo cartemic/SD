@@ -196,6 +196,11 @@ def _calculate_over_ratio_range(
         error_tol_specific_volume
 ):
     initial_state_gas = ct.Solution(mechanism)
+    initial_state_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions
+    ]
     working_gas = ct.Solution(mechanism)
     working_gas.TPX = [
         initial_temperature,
@@ -210,6 +215,7 @@ def _calculate_over_ratio_range(
         error_tol_specific_volume,
         current_density_ratio
     )
+    print(working_gas.TP)
 
     return current_state_number, current_velocity
 
@@ -244,9 +250,12 @@ def calculate_cj_speed(initial_pressure,
         R-squared value of least-squares parabolic curve fit
     """
     # DECLARATIONS
-    numsteps = 20
+    numsteps = 5
     max_density_ratio = 2.0
     min_density_ratio = 1.5
+    pool = mp.Pool()
+
+    # TODO: figure out what to do about CJ state calculation
 
     # Set error tolerances for CJ state calculation
     error_tol_temperature = 1e-4
@@ -272,7 +281,6 @@ def calculate_cj_speed(initial_pressure,
         )
 
         # parallel loop through density ratios
-        pool = mp.Pool()
         stargs = [[number,
                    ratio,
                    initial_temperature,
