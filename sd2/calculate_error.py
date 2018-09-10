@@ -22,9 +22,9 @@ def equilibrium(working_gas,
 
     Parameters
     ----------
-    working_gas : cantera gas object
+    working_gas : cantera.composite.Solution
         A cantera gas object used for calculations (???).
-    initial_state_gas : cantera gas object
+    initial_state_gas : cantera.composite.Solution
         A cantera gas object for the working gas mixture in its initial,
         undetonated state.
     initial_velocity_guess : float
@@ -86,9 +86,9 @@ def frozen(working_gas,
 
     Parameters
     ----------
-    working_gas : cantera gas object
+    working_gas : cantera.composite.Solution
         A cantera gas object used for calculations.
-    initial_state_gas : cantera gas object
+    initial_state_gas : cantera.composite.Solution
         A cantera gas object for the working gas mixture in its initial,
         undetonated state.
     initial_velocity_guess : float
@@ -156,9 +156,9 @@ def reflected_shock_frozen(shock_speed,
     ----------
     shock_speed : float
         Current post-incident-shock lab frame particle speed
-    working_gas : cantera gas object
+    working_gas : cantera.composite.Solution
         A cantera gas object used for calculations.
-    post_shock_gas : cantera gas object
+    post_shock_gas : cantera.composite.Solution
         A cantera gas object at post-incident-shock state (already computed)
 
     Returns

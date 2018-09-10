@@ -20,7 +20,7 @@ def test_calculate_cj_speed():
     # CJ speed calculated by SDToolbox given *test_args
     original_cj_speed = 2353.2706464533471
 
-    test_speed = detonations.calculate_cj_speed(*test_args)
+    test_speed = detonations.calculate_cj_speed(*test_args)['cj speed']
     relative_difference = abs(
         (original_cj_speed - test_speed) /
         original_cj_speed

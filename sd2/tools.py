@@ -10,12 +10,12 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 
 def perturb(property_str, property_dict, delta_dict):
     """
-    This function perturps a property by some amount delta.
+    This function perturbs a property by some amount delta.
 
     Parameters
     ----------
     property_str : str
-        A cantera gas object used for calculations (???).
+        A string corresponding to the dictionary key of the property to perturb.
     property_dict : dict
         A dictionary containing properties (as keys) and their numeric values
         (as values)

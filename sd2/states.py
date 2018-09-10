@@ -16,7 +16,7 @@ def get_equilibrium_properties(gas, density, temperature):
 
     Parameters
     ----------
-    gas : cantera gas object
+    gas : cantera.composite.Solution
         Working gas object.
     density : float
         Mixture density in kg/m^3.
@@ -46,7 +46,7 @@ def get_frozen_properties(gas, density, temperature):
 
     Parameters
     ----------
-    gas : cantera gas object
+    gas : cantera.composite.Solution
         Working gas object.
     density : float
         Mixture density in kg/m^3.

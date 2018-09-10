@@ -9,6 +9,7 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 import warnings
 import numpy as np
 import cantera as ct
+import multiprocessing as mp
 from scipy.optimize import curve_fit
 from . import tools, calculate_error, states
 
@@ -27,9 +28,9 @@ def calculate_cj_state(working_gas,
 
     Parameters
     ----------
-    working_gas : cantera gas object
+    working_gas : cantera.composite.Solution
         A cantera gas object used for calculations (???).
-    initial_state_gas : cantera gas object
+    initial_state_gas : cantera.composite.Solution
         A cantera gas object for the working gas mixture in its initial,
         undetonated state.
     error_tol_temperature : float
@@ -44,7 +45,7 @@ def calculate_cj_state(working_gas,
 
     Returns
     -------
-    working_gas : cantera gas object
+    working_gas : cantera.composite.Solution
         Gas object at equilibrium state.
     initial_velocity : float
         Initial velocity resulting in the input density ratio, in m/s.
@@ -62,16 +63,14 @@ def calculate_cj_state(working_gas,
     delta = {
         'temperature': 1000.,
         'volume': 1000.,
-        'pressure': 1000.,
-        'velocity': 1000.
+        'pressure': 1000.
         }
 
     # Set guess values
     guess = {
         'temperature': 2000.,
         'volume': initial['volume'] / density_ratio,
-        'density': density_ratio / initial['volume'],
-        'velocity': 2000.
+        'density': density_ratio / initial['volume']
         }
 
     # Add pressure and enthalpy to guess dictionary
@@ -85,15 +84,15 @@ def calculate_cj_state(working_gas,
     while ((abs(delta['temperature']) >
             error_tol_temperature * guess['temperature'])
            or
-           (abs(delta['velocity']) >
-            error_tol_specific_volume * guess['velocity'])):
+           (abs(delta['volume']) >
+            error_tol_specific_volume * guess['volume'])):
 
         # Manage loop count
         loop_counter += 1
         if loop_counter == max_iterations:
             warnings.warn('No convergence within {0} iterations'.
                           format(max_iterations))
-            return [working_gas, guess['velocity']]
+            return [working_gas, guess['volume']]
 
         # Calculate pressure and enthalpy error for current guess values as
         # a numpy array, which will be the negative of the ordinate vector, b,
@@ -103,7 +102,7 @@ def calculate_cj_state(working_gas,
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                guess['velocity']) * -1
+                guess['volume']) * -1
             )
 
         # Perturb temperature guess and find corresponding pressure and
@@ -127,38 +126,45 @@ def calculate_cj_state(working_gas,
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                perturbed['velocity']
+                perturbed['volume']
                 ) +
             ordinate_vector
             )
         temperature_partials /= delta['temperature']
 
-        # Perturb velocity guess -- temperature and enthalpy are not affected
-        delta['velocity'] = guess['velocity'] * 0.02
-        perturbed = tools.perturb('velocity', guess, delta)
+        # Perturb volume guess
+        delta['volume'] = guess['volume'] * 0.02
+        perturbed = tools.perturb('volume', guess, delta)
+        perturbed.update(
+            states.get_equilibrium_properties(
+                working_gas,
+                perturbed['density'],
+                perturbed['temperature']
+                )
+            )
 
-        # Calculate pressure and enthalpy error for velocity-perturbed
+        # Calculate pressure and enthalpy error for volume-perturbed
         # state, add (negative) ordinate vector to get error deltas for
-        # enthalpy and pressure, and divide by velocity delta to get rates
-        # WRT velocity
-        velocity_partials = (
+        # enthalpy and pressure, and divide by volume delta to get rates
+        # WRT volume
+        volume_partials = (
             calculate_error.
             equilibrium(
                 working_gas,
                 initial_state_gas,
-                perturbed['velocity']
+                perturbed['volume']
                 ) +
             ordinate_vector
             )
-        velocity_partials /= delta['velocity']
+        volume_partials /= delta['volume']
 
         # build coefficient matrix, A, for Ax = b
         coefficient_matrix = np.array([temperature_partials,
-                                       velocity_partials]).transpose()
+                                       volume_partials]).transpose()
 
         # Solve Ax = b
         [delta['temperature'],
-         delta['velocity']] = np.linalg.solve(
+         delta['volume']] = np.linalg.solve(
              coefficient_matrix,
              ordinate_vector
              )
@@ -172,7 +178,7 @@ def calculate_cj_state(working_gas,
 
         # Update guess values
         guess['temperature'] += delta['temperature']
-        guess['velocity'] += delta['velocity']
+        guess['volume'] += delta['volume']
         guess.update(
             states.get_equilibrium_properties(
                 working_gas,
@@ -181,7 +187,41 @@ def calculate_cj_state(working_gas,
                 )
             )
 
-    return [working_gas, guess['velocity']]
+    return [working_gas, guess['volume']]
+
+
+def _calculate_over_ratio_range(
+        current_state_number,
+        current_density_ratio,
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions,
+        mechanism,
+        error_tol_temperature,
+        error_tol_specific_volume
+):
+    initial_state_gas = ct.Solution(mechanism)
+    initial_state_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions
+    ]
+    working_gas = ct.Solution(mechanism)
+    working_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_mole_fractions
+    ]
+    [_,
+     current_velocity] = calculate_cj_state(
+        working_gas,
+        initial_state_gas,
+        error_tol_temperature,
+        error_tol_specific_volume,
+        current_density_ratio
+    )
+
+    return current_state_number, current_velocity
 
 
 def calculate_cj_speed(initial_pressure,
@@ -201,39 +241,26 @@ def calculate_cj_speed(initial_pressure,
         initial pressure (Pa)
     initial_temperature : float
         initial temperature (K)
-    species_mole_fractions : str
-        string of reactant species mole fractions
+    species_mole_fractions : str or dict
+        string or dictionary of reactant species mole fractions
     mechanism : str
         cti file containing mechanism data (e.g. 'gri30.cti')
+    return_r_squared : bool
+        return the R^2 value of the CJ speed vs. density ratio fit
+    return_state : bool
+        return the CJ state corresponding to the calculated velocity
 
     Returns
     -------
-    cj_speed : float
-        CJ detonation speed (m/s)
-    r_squared : float
-        R-squared value of least-squares parabolic curve fit
+    dict
     """
     # DECLARATIONS
-    numsteps = 20
+    num_steps = 5
     max_density_ratio = 2.0
     min_density_ratio = 1.5
+    pool = mp.Pool()
 
-    cj_velocity_calculations = np.zeros(numsteps+1, float)
-    density_ratio_calculations = np.zeros(numsteps+1, float)
-
-    # Initialize gas objects
-    initial_state_gas = ct.Solution(mechanism)
-    working_gas = ct.Solution(mechanism)
-    initial_state_gas.TPX = [
-        initial_temperature,
-        initial_pressure,
-        species_mole_fractions
-        ]
-    working_gas.TPX = [
-        initial_temperature,
-        initial_pressure,
-        species_mole_fractions
-        ]
+    # TODO: figure out what to do about CJ state calculation
 
     # Set error tolerances for CJ state calculation
     error_tol_temperature = 1e-4
@@ -241,6 +268,7 @@ def calculate_cj_speed(initial_pressure,
 
     counter = 1
     r_squared = 0.0
+    delta_r_squared = 0.0
     adjusted_density_ratio = 0.0
 
     def curve_fit_function(x, a, b, c):
@@ -251,41 +279,44 @@ def calculate_cj_speed(initial_pressure,
         return a * x**2 + b * x + c
 
     while (counter <= 4) and (r_squared < 0.99999 or delta_r_squared < 1e-7):
-        step = (max_density_ratio - min_density_ratio) / float(numsteps)
-        states_calculated = 0
-        density_ratio = min_density_ratio
-        while density_ratio <= max_density_ratio:
-            working_gas.TPX = [
-                initial_temperature,
-                initial_pressure,
-                species_mole_fractions
-                ]
-            [working_gas,
-             temp] = calculate_cj_state(
-                 working_gas,
-                 initial_state_gas,
-                 error_tol_temperature,
-                 error_tol_specific_volume,
-                 density_ratio
-                 )
-            cj_velocity_calculations[states_calculated] = temp
-            density_ratio_calculations[states_calculated] = (
-                working_gas.density /
-                initial_state_gas.density
-                )
-            states_calculated += 1
-            density_ratio += step
+        density_ratio_array = np.linspace(
+            min_density_ratio,
+            max_density_ratio,
+            num_steps + 1
+        )
+
+        # parallel loop through density ratios
+        stargs = [[number,
+                   ratio,
+                   initial_temperature,
+                   initial_pressure,
+                   species_mole_fractions,
+                   mechanism,
+                   error_tol_temperature,
+                   error_tol_specific_volume
+                   ]
+                  for number, ratio in
+                  zip(
+                      range(len(density_ratio_array)),
+                      density_ratio_array
+                  )
+                  ]
+        result = pool.starmap(_calculate_over_ratio_range, stargs)
+        result.sort()
+        cj_velocity_calculations = np.array(
+            [item for (_, item) in result]
+        )
 
         # Get curve fit
         [curve_fit_coefficients, _] = curve_fit(
             curve_fit_function,
-            density_ratio_calculations,
+            density_ratio_array,
             cj_velocity_calculations
             )
 
         # Calculate R^2 value
         residuals = cj_velocity_calculations - curve_fit_function(
-            density_ratio_calculations,
+            density_ratio_array,
             *curve_fit_coefficients
             )
         old_r_squared = r_squared
@@ -313,11 +344,39 @@ def calculate_cj_speed(initial_pressure,
         *curve_fit_coefficients
         )
 
+    if return_state:
+        initial_state_gas = ct.Solution(mechanism)
+        working_gas = ct.Solution(mechanism)
+        initial_state_gas.TPX = [
+            initial_temperature,
+            initial_pressure,
+            species_mole_fractions
+        ]
+        working_gas.TPX = [
+            initial_temperature,
+            initial_pressure,
+            species_mole_fractions
+        ]
+        calculate_cj_state(
+            working_gas,
+            initial_state_gas,
+            error_tol_temperature,
+            error_tol_specific_volume,
+            adjusted_density_ratio
+        )
+
     if return_r_squared and return_state:
-        return [cj_speed, r_squared, working_gas]
+        return {'cj speed': cj_speed,
+                'R^2': r_squared,
+                'cj state': working_gas
+                }
     elif return_state:
-        return [cj_speed, working_gas]
+        return {'cj speed': cj_speed,
+                'cj state': working_gas
+                }
     elif return_r_squared:
-        return [cj_speed, r_squared]
+        return {'cj speed': cj_speed,
+                'R^2': r_squared
+                }
     else:
-        return cj_speed
+        return {'cj speed': cj_speed}
