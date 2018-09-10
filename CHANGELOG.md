@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed problem where CJ speed calculation would loop indefinitely if R^2 didn't converge above 0.9999
 
 ## [0.1.1b] - 2018-09-07
-### Added
-- Rough CJ state temperature and pressure estimation to decrease the required number of calls to Cantera, causing an approximate order-of-magnitude speedup of CJ speed calculation
 ### Changed
 - Cantera species input type suggestions to dict or str
+- Parallelized CJ state calculation for curve fit in `detonations.calculate_cj_speed()`
+- Made `detonations.calculate_cj_speed()` return a dict rather than a float or list to limit type and positional ambiguity
