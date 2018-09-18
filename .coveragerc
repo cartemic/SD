@@ -1,0 +1,2 @@
+[run]
+omit = sd2/_version.py, setup.py
