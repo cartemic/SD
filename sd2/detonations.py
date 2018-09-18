@@ -285,6 +285,7 @@ def calculate_cj_speed(
                           density_ratio_array
                       )
                       ]
+            # noinspection PyUnboundLocalVariable
             result = pool.starmap(_calculate_over_ratio_range, stargs)
 
         else:
@@ -338,6 +339,7 @@ def calculate_cj_speed(
         max_density_ratio = adjusted_density_ratio * (1 + 0.001)
         counter += 1
 
+    # noinspection PyUnboundLocalVariable
     cj_speed = curve_fit_function(
         adjusted_density_ratio,
         *curve_fit_coefficients
@@ -365,11 +367,13 @@ def calculate_cj_speed(
         )
 
     if return_r_squared and return_state:
+        # noinspection PyUnboundLocalVariable
         return {'cj speed': cj_speed,
                 'R^2': r_squared,
                 'cj state': working_gas
                 }
     elif return_state:
+        # noinspection PyUnboundLocalVariable
         return {'cj speed': cj_speed,
                 'cj state': working_gas
                 }
