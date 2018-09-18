@@ -9,9 +9,8 @@ http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 
 from math import sqrt
 import warnings
-import numpy as np
 import cantera as ct
-from . import tools, states, calculate_error
+from . import states, calculate_error
 
 ''' commented out until dependency is fixed
 def get_reflected_frozen_state_0(
@@ -274,11 +273,12 @@ def get_reflected_frozen_state(
 '''
 
 
-def get_reflected_equil_state_0(
+def get_reflected_eq_state_0(
         initial_state_gas,
         post_shock_gas,
         working_gas,
-        incident_shock_speed):
+        incident_shock_speed
+):
     """
     This function calculates equilibrium post-reflected-shock state assuming
     u1 = 0
@@ -342,7 +342,7 @@ def get_reflected_equil_state_0(
         working['pressure'],
         post_shock_gas.X
         ]
-    working_gas = get_reflected_equil_state(
+    working_gas = get_reflected_eq_state(
         reflected['velocity'],
         post_shock_gas,
         working_gas
@@ -358,13 +358,14 @@ def get_reflected_equil_state_0(
     return [working['pressure'], reflected_shock_speed, working_gas]
 
 
-def get_reflected_equil_state(
+def get_reflected_eq_state(
         particle_speed,
         post_shock_gas,
         working_gas,
         error_tol_temperature=1e-4,
         error_tol_specific_volume=1e-4,
-        max_iterations=500):
+        max_iterations=500
+):
     """
     This function calculates equilibrium post-reflected-shock state for a
     specified shock velocity
@@ -554,7 +555,8 @@ def get_post_shock_eq_state(
         mechanism,
         error_tol_temperature=1e-4,
         error_tol_specific_volume=1e-4,
-        max_iterations=500):
+        max_iterations=500
+):
     """
     This function calculates equilibrium post-shock state using Reynolds'
     iterative method
