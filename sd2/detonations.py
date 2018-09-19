@@ -82,7 +82,8 @@ def calculate_cj_state(
         # check for non-convergence
         if loop_counter == max_iterations:
             warnings.warn(
-                'No convergence within {0} iterations'.format(max_iterations)
+                'No convergence within {0} iterations'.format(max_iterations),
+                Warning
             )
             return [working_gas, guess_velocity]
 
