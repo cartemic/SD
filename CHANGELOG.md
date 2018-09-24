@@ -45,3 +45,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Cantera species input type suggestions to dict or str
 - Parallelized CJ state calculation for curve fit in `detonations.calculate_cj_speed()`
 - Made `detonations.calculate_cj_speed()` return a dict rather than a float or list to limit type and positional ambiguity
+
+## [0.1.1b1] - 2018-09-18
+### Changed
+- CJ speed calculation parallelization is now optional
+- Fixed velocity/volume typos in `detonations.calculate_cj_speed`
+- deleted `tools.py` because it wasn't super useful

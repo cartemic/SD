@@ -1,7 +1,7 @@
 from codecs import open
 from os import path
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -16,6 +16,7 @@ with open(path.join(here, 'CHANGELOG.md')) as changelog_file:
 
 desc = readme + '\n\n' + changelog
 try:
+    # noinspection PyPackageRequirements
     import pypandoc
     long_description = pypandoc.convert_text(desc, 'rst', format='md')
     with open(path.join(here, 'README.rst'), 'w') as rst_readme:
@@ -37,6 +38,7 @@ tests_require = [
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 setup_requires = ['pytest-runner'] if needs_pytest else []
 
+# noinspection PyUnresolvedReferences
 setup(
     name='sd2',
     version=__version__,
