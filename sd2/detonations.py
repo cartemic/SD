@@ -239,7 +239,7 @@ def calculate_cj_speed(
     dict
     """
     # DECLARATIONS
-    num_steps = 5
+    num_steps = 20
     max_density_ratio = 2.0
     min_density_ratio = 1.5
 

@@ -51,3 +51,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - CJ speed calculation parallelization is now optional
 - Fixed velocity/volume typos in `detonations.calculate_cj_speed`
 - deleted `tools.py` because it wasn't super useful
+
+## [0.1.1b2] - 2018-10-25
+### Changed
+- Fixed a problem I created by decreasing the number of solutions for the curve fit of CJ speed
